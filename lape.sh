@@ -5,5 +5,5 @@ python lape.py  \
     --model_name_inf "Qwen05B" \
     --dataset_name_inf "flores" \
     --kaggle_dataname_to_save "lape-qwen05" \
-    # --is_update None
+    # --is_update 
     

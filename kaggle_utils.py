@@ -99,7 +99,11 @@ def save_to_kaggle(
         dataset_ref = f"{kaggle_api_token['username']}/{dataset_name}"
         if is_update:
             print(f"Dataset {dataset_name} exists. Updating...")
-            api.dataset_download_files(dataset_ref, path=save_dir, unzip=True)
+            print(f"dataset_ref: {dataset_ref}")
+            api.dataset_download_files(dataset_ref, path=base_dir, unzip=True)
+            print("Files in directory before creating:")
+            for f in os.listdir(base_dir):
+                print("-", f)
             subprocess.run(["kaggle", "datasets", "version", "-p", base_dir, "-m", "Updating dataset"])
 
         else:
@@ -107,7 +111,9 @@ def save_to_kaggle(
             print("Files in directory before creating:")
             for f in os.listdir(save_dir):
                 print("-", f)
-            subprocess.run(["kaggle", "datasets", "create", "-p", save_dir, "--dir-mode", "zip"])
+            result = subprocess.run(["kaggle", "datasets", "create", "-p", base_dir, "--dir-mode", "zip"],capture_output=True,text=True)
+            print("STDOUT:", result.stdout)
+            print("STDERR:", result.stderr)
             
     except Exception as e:
         print(f"Error while checking or creating dataset: {e}")
