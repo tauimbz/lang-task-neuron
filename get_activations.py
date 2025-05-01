@@ -194,6 +194,7 @@ def get_neurons(
     n_lang = 0
     language_dict = {}
     selected_langs = selected_langs if selected_langs != None else configs
+    print(selected_langs)
     eval_result = {}
     
     for lang in selected_langs:
