@@ -292,5 +292,7 @@ a, b, c = get_neurons(
         apply_template=args.apply_template,
         debug=args.debug,
         take_whole=args.take_whole,
-        max_tokens_overzeros=args.max_tokens_overzeros
+        max_tokens_overzeros=args.max_tokens_overzeros,
+        kaggle_dataname_to_save=args.kaggle_dataname_to_save, 
+        is_update=args.is_update
     )
