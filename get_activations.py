@@ -272,7 +272,7 @@ def get_neurons(
     del full_raw_values_last_token
     del full_raw_values 
     full_languages_raw_values = all_languages_dict_to_tensor(all_languages)
-    path_res = f"res/act/{model_name.split('/')[-1]}"
+    path_res = f"/workspace/res/act/{model_name.split('/')[-1]}"
     os.makedirs(path_res, exist_ok=True)
     torch.save(full_languages_raw_values, f"{path_res}/act_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}.pt")
     torch.save(all_languages_over_zero, f"{path_res}/oz_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}")
