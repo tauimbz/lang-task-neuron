@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.metrics import average_precision_score
 import shutil
 import subprocess
+from pathlib import Path
 kaggle_api_token = {
     "username": "inayarahmanisa",
     "key": "***REMOVED***"
@@ -50,14 +51,15 @@ def save_to_kaggle(
     api = KaggleApi()
     api.authenticate()
 
-    target_dir = "/kaggle/dataset/result"
+    target_dir = "kaggle/output"
     
-    if os.path.exists(target_dir):
+    if not is_update and os.path.exists(target_dir):
         shutil.rmtree(target_dir)
 
     os.makedirs(target_dir, exist_ok=True)
 
     base_dir = os.path.join(target_dir, "result")
+    
     os.makedirs(base_dir, exist_ok=True)
 
     meta = {
@@ -84,11 +86,14 @@ def save_to_kaggle(
     for file_name in os.listdir(base_dir):
         print(f"- {file_name}")
 
+    base_dir = Path("kaggle/output/result").resolve()
+    save_dir = base_dir.as_posix() 
+    print(f"save_dir: {save_dir}")
     try:
         dataset_ref = f"{kaggle_api_token['username']}/{dataset_name}"
         if is_update:
             print(f"Dataset {dataset_name} exists. Updating...")
-            api.dataset_download_files(dataset_ref, path=base_dir, unzip=True)
+            api.dataset_download_files(dataset_ref, path=save_dir, unzip=True)
             subprocess.run(["kaggle", "datasets", "version", "-p", base_dir, "-m", "Updating dataset"])
 
         else:
@@ -98,12 +103,12 @@ def save_to_kaggle(
     except Exception as e:
         print(f"Error while checking or creating dataset: {e}")
 
-c = torch.randn(1,2,3,4)
-save_to_kaggle(
-    result_neurons = [c, c],
-    dataset_name= "testssssss",
-    filename= ["test.pt", "test2.pt"],
-    is_update=True
-)
+# c = torch.randn(1,2,3,4)
+# save_to_kaggle(
+#     result_neurons = [c, c],
+#     dataset_name= "testssssss",
+#     filename= ["test.pt", "test2.pt"],
+#     is_update=True
+# )
 
-# download_from_kaggle('inayarahmanisa/testssssss', 'test.pt', 'data/')
+# download_from_kaggle('inayarahmanisa/testssssss', 'test.pt')
