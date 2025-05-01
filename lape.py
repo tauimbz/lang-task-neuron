@@ -99,8 +99,8 @@ def activation():
         final_indice.append(layer_index)
     os.makedirs(f"lape", exist_ok=True)
     name_to_save = f"{args.model_name_inf}_{args.dataset_name_inf}"
-    torch.save(final_indice, f"lape/{name_to_save}")  
+    torch.save(final_indice, f"res/lape/{name_to_save}")  
     if args.kaggle_dataname_to_save:
-        save_to_kaggle([final_indice, lang_dict], args.kaggle_dataname_to_save, [name_to_save, "lang_dict"], args.is_update)
+        save_to_kaggle(result_neurons=[final_indice, lang_dict], dataset_name=args.kaggle_dataname_to_save, filename=[name_to_save, "lang_dict"], is_update=args.is_update)
 
 activation()
