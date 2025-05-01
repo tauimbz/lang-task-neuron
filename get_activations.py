@@ -272,11 +272,11 @@ def get_neurons(
     del full_raw_values_last_token
     del full_raw_values 
     full_languages_raw_values = all_languages_dict_to_tensor(all_languages)
-    path_res = f"res/{kaggle_dataname_to_save}"
+    path_res = f"res/act/{model_name.split('/')[-1]}"
     os.makedirs(path_res, exist_ok=True)
-    torch.save(full_languages_raw_values, f"act_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}.pt")
-    torch.save(all_languages_over_zero, f"oz_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}")
-    torch.save(language_dict, f"ld_{dataset_name.split('/')[-1]}")
+    torch.save(full_languages_raw_values, f"{path_res}/act_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}.pt")
+    torch.save(all_languages_over_zero, f"{path_res}/oz_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}")
+    torch.save(language_dict, f"{path_res}/ld_{dataset_name.split('/')[-1]}")
 
     if kaggle_dataname_to_save:
         save_to_kaggle(dataset_name= kaggle_dataname_to_save, data_dir=path_res, is_update=is_update)
