@@ -80,10 +80,10 @@ def activation():
     # for r, c in zip(row_index, col_index):
     #     print(r, c, activation_probs[r][c])
 
-    print(selected_probs.size(0), torch.bincount(selected_probs.argmax(dim=-1)))
+    # print(selected_probs.size(0), torch.bincount(selected_probs.argmax(dim=-1)))
     selected_probs = selected_probs.transpose(0, 1)
     activation_bar = flattened_probs.kthvalue(round(len(flattened_probs) * activation_bar_ratio)).values.item()
-    print((selected_probs > activation_bar).sum(dim=1).tolist())
+    # print((selected_probs > activation_bar).sum(dim=1).tolist())
     lang, indice = torch.where(selected_probs > activation_bar)
 
     merged_index = torch.stack((row_index, col_index), dim=-1)
@@ -97,9 +97,10 @@ def activation():
         for l, h in enumerate(layer_index):
             layer_index[l] = torch.tensor(h).long()
         final_indice.append(layer_index)
-    os.makedirs(f"lape", exist_ok=True)
+    path_res = f"res/lape"
+    os.makedirs(path_res, exist_ok=True)
     name_to_save = f"{args.model_name_inf}_{args.dataset_name_inf}"
-    torch.save(final_indice, f"res/lape/{name_to_save}")  
+    torch.save(final_indice, f"{path_res}/{name_to_save}")  
     if args.kaggle_dataname_to_save:
         save_to_kaggle(result_neurons=[final_indice, lang_dict], dataset_name=args.kaggle_dataname_to_save, filename=[name_to_save, "lang_dict"], is_update=args.is_update)
 
