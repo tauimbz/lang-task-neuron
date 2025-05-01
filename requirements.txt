@@ -1,0 +1,8 @@
+transformers
+datasets
+huggingface_hub
+scikit-learn
+kaggle
+pandas
+torch
+tqdm

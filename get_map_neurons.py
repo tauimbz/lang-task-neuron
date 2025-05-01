@@ -143,13 +143,17 @@ def map(
     tensor_per_layer = tensor.reshape(tensor.shape[0], tensor.shape[1],num_layer, int(tensor.shape[2]/num_layer))
     result = count_map_neurons(tensor_per_layer)
     os.makedirs(f"res/{model_name_inf}_{dataset_name_inf}", exist_ok=True)
-    torch.save(result, f"{model_name_inf}_{dataset_name_inf}/map_result_{model_name_inf}_{dataset_name_inf}.pt")
+    torch.save(result, f"res/{model_name_inf}_{dataset_name_inf}/map_result_{model_name_inf}_{dataset_name_inf}.pt")
+    map_neurons_list = []
+    filename_list = []
     for i in threshold:
         map_neurons = get_map_neurons(result, tensor, i)
         filename = f"{model_name_inf}_{dataset_name_inf}/map_{i}_{model_name_inf}_{dataset_name_inf}/.pt"
         # torch.save(map_neurons, f"{model_name_inf}_{dataset_name_inf}/map_{i}_{model_name_inf}_{dataset_name_inf}/.pt")
-        if kaggle_dataname_to_save:
-            save_to_kaggle(map_neurons, kaggle_dataname_to_save, filename, is_update)
+        map_neurons_list.append(map_neurons)
+        filename_list.append(filename)
+    if kaggle_dataname_to_save:
+        save_to_kaggle(map_neurons_list, kaggle_dataname_to_save, filename_list, is_update)
 
 def main():
     parser = argparse.ArgumentParser(description="Run the map function with specified parameters.")

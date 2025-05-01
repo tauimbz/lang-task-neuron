@@ -1,0 +1,3 @@
+MLAMA
+['de', 'en', 'fr', 'id', 'jp', 'ko', 'ms', 'nl', 'pt', 'ru', 'vi', 'zh']
+

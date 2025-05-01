@@ -3,7 +3,7 @@ import os
 import json
 import torch
 from tqdm import tqdm
-from typing import List
+from typing import List, Optional, Union
 import pandas as pd
 from sklearn.metrics import average_precision_score
 import shutil
@@ -38,9 +38,9 @@ def download_from_kaggle(
 
 
 def save_to_kaggle(
-    result_neurons: torch.tensor,
+    result_neurons: Optional[Union[torch.Tensor, List[torch.Tensor]]],
     dataset_name: str,
-    filename: str,
+    filename: Optional[Union[str, List[str]]],
     is_update:bool =False
 ):
     
@@ -71,7 +71,14 @@ def save_to_kaggle(
     with open(metadata_path, 'w') as f:
         json.dump(meta, f)
 
-    torch.save(result_neurons, os.path.join(base_dir, filename))
+    if isinstance(result_neurons, torch.Tensor):
+        assert isinstance(filename, str), "there must be the same number of filename and rensult neurons"
+        torch.save(result_neurons, os.path.join(base_dir, filename))
+        # Process single tensor
+    elif isinstance(result_neurons, list) and all(isinstance(t, torch.Tensor) for t in result_neurons):
+        assert len(result_neurons) == len(filename), "there must be the same number of filename and rensult neurons"
+        for i in range (len(result_neurons)):
+            torch.save(result_neurons[i], os.path.join(base_dir, filename[i]))
 
     print("Files in the target directory:")
     for file_name in os.listdir(base_dir):
@@ -91,12 +98,12 @@ def save_to_kaggle(
     except Exception as e:
         print(f"Error while checking or creating dataset: {e}")
 
-# c = torch.randn(1,2,3,4)
-# save_to_kaggle(
-#     result_neurons = c,
-#     dataset_name= "testssssss",
-#     filename= "test.pt",
-#     is_update=True
-# )
+c = torch.randn(1,2,3,4)
+save_to_kaggle(
+    result_neurons = [c, c],
+    dataset_name= "testssssss",
+    filename= ["test.pt", "test2.pt"],
+    is_update=True
+)
 
-download_from_kaggle('inayarahmanisa/testssssss', 'test.pt', 'data/')
+# download_from_kaggle('inayarahmanisa/testssssss', 'test.pt', 'data/')
