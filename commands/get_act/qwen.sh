@@ -1,4 +1,3 @@
-export CUDA_VISIBLE_DEVICES=0
 python get_activations.py  \
     --hf_logintoken "***REMOVED***" \
     --model "Qwen/Qwen2.5-7B-Instruct"\

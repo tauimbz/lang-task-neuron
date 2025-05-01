@@ -6,3 +6,4 @@ kaggle
 pandas
 torch
 tqdm
+accelerate
