@@ -274,9 +274,9 @@ def get_neurons(
     full_languages_raw_values = all_languages_dict_to_tensor(all_languages)
     print(f"kaggle_dataname_to_save: {kaggle_dataname_to_save}")
     if kaggle_dataname_to_save:
-        save_to_kaggle(full_languages_raw_values, kaggle_dataname_to_save, f"act_{model_name}_{dataset_name.split('/')[-1]}{max_instances}_{is_predict}.pt", is_update)
-        save_to_kaggle(all_languages_over_zero, kaggle_dataname_to_save, f"oz_{model_name}_{dataset_name.split('/')[-1]}{max_instances}_{is_predict}", True)
-        save_to_kaggle(language_dict, kaggle_dataname_to_save, f"ld_{model_name}_{dataset_name.split('/')[-1]}", True)
+        save_to_kaggle(full_languages_raw_values, kaggle_dataname_to_save, f"act_{dataset_name.split('/')[-1]}{max_instances}_{is_predict}.pt", is_update)
+        save_to_kaggle(all_languages_over_zero, kaggle_dataname_to_save, f"oz_{dataset_name.split('/')[-1]}{max_instances}_{is_predict}", True)
+        save_to_kaggle(language_dict, kaggle_dataname_to_save, f"ld_{dataset_name.split('/')[-1]}", True)
 
     return full_languages_raw_values, all_languages_over_zero, language_dict
 
