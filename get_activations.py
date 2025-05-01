@@ -29,7 +29,7 @@ parser.add_argument("--apply_template", action="store_true", help="Whether to ap
 parser.add_argument("--debug", action="store_true", help="Enable debug mode")
 parser.add_argument("--take_whole", action="store_true", help="Take whole neuron from prompt if is_predict True")
 parser.add_argument("--max_tokens_overzeros", type=int, default=10000, help="Max tokens overzeros")
-parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle")
+parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
 parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
 args = parser.parse_args()
 
@@ -272,11 +272,14 @@ def get_neurons(
     del full_raw_values_last_token
     del full_raw_values 
     full_languages_raw_values = all_languages_dict_to_tensor(all_languages)
-    print(f"kaggle_dataname_to_save: {kaggle_dataname_to_save}")
+    path_res = f"res/{kaggle_dataname_to_save}"
+    os.makedirs(path_res, exist_ok=True)
+    torch.save(full_languages_raw_values, f"act_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}.pt")
+    torch.save(all_languages_over_zero, f"oz_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}")
+    torch.save(language_dict, f"ld_{dataset_name.split('/')[-1]}")
+
     if kaggle_dataname_to_save:
-        save_to_kaggle(full_languages_raw_values, kaggle_dataname_to_save, f"act_{dataset_name.split('/')[-1]}{max_instances}_{is_predict}.pt", is_update)
-        save_to_kaggle(all_languages_over_zero, kaggle_dataname_to_save, f"oz_{dataset_name.split('/')[-1]}{max_instances}_{is_predict}", True)
-        save_to_kaggle(language_dict, kaggle_dataname_to_save, f"ld_{dataset_name.split('/')[-1]}", True)
+        save_to_kaggle(dataset_name= kaggle_dataname_to_save, data_dir=path_res, is_update=is_update)
 
     return full_languages_raw_values, all_languages_over_zero, language_dict
 

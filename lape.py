@@ -18,10 +18,8 @@ parser.add_argument("--is_update", action='store_true', help="Flag to update Kag
 args = parser.parse_args()
 
 
-# Ensure correct parsing of 'in_kaggle' (True/False)
 in_kaggle_value = args.in_kaggle  # No need to compare to "True" or "False"
 
-# If you want to handle empty dataset for local files:
 dataset_kaggle_value = args.dataset_kaggle if args.dataset_kaggle != "" else None
 n, over_zero = [], []
 lang_dict = dict()

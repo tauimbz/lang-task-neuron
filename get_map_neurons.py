@@ -142,18 +142,18 @@ def map(
     print(tensor.shape)
     tensor_per_layer = tensor.reshape(tensor.shape[0], tensor.shape[1],num_layer, int(tensor.shape[2]/num_layer))
     result = count_map_neurons(tensor_per_layer)
-    os.makedirs(f"res/{model_name_inf}_{dataset_name_inf}", exist_ok=True)
-    torch.save(result, f"res/{model_name_inf}_{dataset_name_inf}/map_result_{model_name_inf}_{dataset_name_inf}.pt")
-    map_neurons_list = []
-    filename_list = []
+    path_res = f"res/map/{model_name_inf}_{dataset_name_inf}"
+    os.makedirs(path_res, exist_ok=True)
+    torch.save(result, f"{path_res}/result_{model_name_inf}_{dataset_name_inf}.pt")
+    
     for i in threshold:
         map_neurons = get_map_neurons(result, tensor, i)
-        filename = f"{model_name_inf}_{dataset_name_inf}/map_{i}_{model_name_inf}_{dataset_name_inf}/.pt"
+        filename = f"{path_res}/map_{i}_{model_name_inf}_{dataset_name_inf}.pt"
+        torch.save(map_neurons, filename)
         # torch.save(map_neurons, f"{model_name_inf}_{dataset_name_inf}/map_{i}_{model_name_inf}_{dataset_name_inf}/.pt")
-        map_neurons_list.append(map_neurons)
-        filename_list.append(filename)
+        
     if kaggle_dataname_to_save:
-        save_to_kaggle(map_neurons_list, kaggle_dataname_to_save, filename_list, is_update)
+        save_to_kaggle(dataset_name=kaggle_dataname_to_save, data_dir=path_res, is_update=is_update)
 
 def main():
     parser = argparse.ArgumentParser(description="Run the map function with specified parameters.")
@@ -166,7 +166,7 @@ def main():
     parser.add_argument("--dataset_name_inf", type=str, required=True, help="Dataset name")
     parser.add_argument("--is_last_token", action='store_true', help="Set if last token")
     parser.add_argument("--max_instances", type=int, default=None, help="Maximum instances")
-    parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle")
+    parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
     parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
 
     args = parser.parse_args()

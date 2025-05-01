@@ -39,9 +39,10 @@ def download_from_kaggle(
 
 
 def save_to_kaggle(
-    result_neurons: Optional[Union[torch.Tensor, List[torch.Tensor]]],
     dataset_name: str,
-    filename: Optional[Union[str, List[str]]],
+    data_dir:str = None,
+    result_neurons: Optional[Union[torch.Tensor, List[torch.Tensor]]] = None,
+    filename: Optional[Union[str, List[str]]] = None,
     is_update:bool =False
 ):
     
@@ -53,7 +54,7 @@ def save_to_kaggle(
 
     target_dir = "kaggle/output"
     
-    if not is_update and os.path.exists(target_dir):
+    if os.path.exists(target_dir):
         shutil.rmtree(target_dir)
 
     os.makedirs(target_dir, exist_ok=True)
@@ -72,15 +73,17 @@ def save_to_kaggle(
     metadata_path = os.path.join(base_dir, 'dataset-metadata.json')
     with open(metadata_path, 'w') as f:
         json.dump(meta, f)
-
-    if isinstance(result_neurons, torch.Tensor):
-        assert isinstance(filename, str), "there must be the same number of filename and rensult neurons"
-        torch.save(result_neurons, os.path.join(base_dir, filename))
-        # Process single tensor
-    elif isinstance(result_neurons, list) and all(isinstance(t, torch.Tensor) for t in result_neurons):
-        assert len(result_neurons) == len(filename), "there must be the same number of filename and rensult neurons"
-        for i in range (len(result_neurons)):
-            torch.save(result_neurons[i], os.path.join(base_dir, filename[i]))
+    if data_dir:
+        shutil.copytree(data_dir, base_dir, dirs_exist_ok=True)
+    elif result_neurons:
+        if isinstance(result_neurons, torch.Tensor):
+            assert isinstance(filename, str), "there must be the same number of filename and rensult neurons"
+            torch.save(result_neurons, os.path.join(base_dir, filename))
+            # Process single tensor
+        elif isinstance(result_neurons, list) and all(isinstance(t, torch.Tensor) for t in result_neurons):
+            assert len(result_neurons) == len(filename), "there must be the same number of filename and rensult neurons"
+            for i in range (len(result_neurons)):
+                torch.save(result_neurons[i], os.path.join(base_dir, filename[i]))
 
     print("Files in the target directory:")
     for file_name in os.listdir(base_dir):
@@ -103,6 +106,7 @@ def save_to_kaggle(
     except Exception as e:
         print(f"Error while checking or creating dataset: {e}")
 
+    shutil.rmtree(target_dir)
 # c = torch.randn(1,2,3,4)
 # save_to_kaggle(
 #     result_neurons = [c, c],
