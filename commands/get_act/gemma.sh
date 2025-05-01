@@ -1,3 +1,4 @@
+export CUDA_VISIBLE_DEVICES=1
 python get_activations.py  \
     --hf_logintoken "***REMOVED***" \
     --model "google/gemma-2-9b-it"\
