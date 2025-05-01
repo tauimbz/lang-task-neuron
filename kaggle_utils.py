@@ -76,14 +76,17 @@ def save_to_kaggle(
     if data_dir:
         shutil.copytree(data_dir, base_dir, dirs_exist_ok=True)
     elif result_neurons:
+        print("hey")
         if isinstance(result_neurons, torch.Tensor):
             assert isinstance(filename, str), "there must be the same number of filename and rensult neurons"
             torch.save(result_neurons, os.path.join(base_dir, filename))
+            
             # Process single tensor
-        elif isinstance(result_neurons, list) and all(isinstance(t, torch.Tensor) for t in result_neurons):
+        elif isinstance(result_neurons, list):
             assert len(result_neurons) == len(filename), "there must be the same number of filename and rensult neurons"
             for i in range (len(result_neurons)):
                 torch.save(result_neurons[i], os.path.join(base_dir, filename[i]))
+                
 
     print("Files in the target directory:")
     for file_name in os.listdir(base_dir):
@@ -101,8 +104,11 @@ def save_to_kaggle(
 
         else:
             print(f"Dataset {dataset_name} does not exist. Creating a new one...")
-            subprocess.run(["kaggle", "datasets", "create", "-p", base_dir, "--dir-mode", "zip"])
-
+            print("Files in directory before creating:")
+            for f in os.listdir(save_dir):
+                print("-", f)
+            subprocess.run(["kaggle", "datasets", "create", "-p", save_dir, "--dir-mode", "zip"])
+            
     except Exception as e:
         print(f"Error while checking or creating dataset: {e}")
 

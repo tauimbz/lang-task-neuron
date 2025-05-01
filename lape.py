@@ -43,7 +43,7 @@ for i, oz in enumerate(over_zero_list):
     lang_dict[i] = oz['lang']
 
 
-print(over_zero[0])
+# print(over_zero[0])
 n = torch.tensor(n)
 over_zero = torch.stack(over_zero, dim=-1)
 
