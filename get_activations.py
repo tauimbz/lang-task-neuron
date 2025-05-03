@@ -107,7 +107,7 @@ def concat_neuron_layers(raw_values_avg_tokens):
     # for i in list(raw_values_last_token.values())[1:]:
     #     full_raw_values_last_token = torch.cat([full_raw_values_last_token, i], dim=-1).cpu()
     # # print(f"shape full_raw_values_last_token {full_raw_values_last_token.shape}")
-    # return full_raw_values_avg_tokens, full_raw_values_last_token
+    return full_raw_values_avg_tokens
 
 
 # def merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token):
@@ -149,7 +149,7 @@ def all_languages_dict_to_tensor(all_languages_dict):
     chunks = [torch.stack(all_languages_dict[i:i+batch_size], dim=0).cpu() 
               for i in range(0, len(all_languages_dict), batch_size)]
     full_languages_raw_values = torch.cat(chunks, dim=0)  # reassemble after stacking
-    full_languages_raw_values.shape
+    print("full_languages_raw_values.shape: {full_languages_raw_values.shape}")
     del chunks
     return full_languages_raw_values
 
@@ -254,6 +254,7 @@ def get_neurons(
         # full_raw_values = merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token)
         all_languages.append(full_raw_values_avg_tokens)
         all_languages_over_zero.append(over_zeros_dict)
+        print()
         over_zeros = torch.zeros(infer_model.num_layers, infer_model.intermediate_size, dtype=torch.int32)
         over_zeros_dict = {"lang":0,"num" : 0, "over_zero" : torch.tensor([])}
         # print(full_raw_values.shape)
@@ -272,6 +273,7 @@ def get_neurons(
     # del full_raw_values_last_token
     # del full_raw_values 
     full_languages_raw_values = all_languages_dict_to_tensor(all_languages)
+
     path_res = f"{parent_dir}/res/act/{model_name.split('/')[-1]}"
     os.makedirs(path_res, exist_ok=True)
     torch.save(full_languages_raw_values, f"{path_res}/act_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}.pt")
