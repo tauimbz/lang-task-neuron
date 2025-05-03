@@ -149,7 +149,6 @@ def all_languages_dict_to_tensor(all_languages_dict):
     chunks = [torch.stack(all_languages_dict[i:i+batch_size], dim=0).cpu() 
               for i in range(0, len(all_languages_dict), batch_size)]
     full_languages_raw_values = torch.cat(chunks, dim=0)  # reassemble after stacking
-    print("full_languages_raw_values.shape: {full_languages_raw_values.shape}")
     del chunks
     return full_languages_raw_values
 
@@ -272,6 +271,8 @@ def get_neurons(
     del full_raw_values_avg_tokens
     # del full_raw_values_last_token
     # del full_raw_values 
+    print("HEY")
+    print(f"all_languages: {len(all_languages)}")
     full_languages_raw_values = all_languages_dict_to_tensor(all_languages)
 
     path_res = f"{parent_dir}/res/act/{model_name.split('/')[-1]}"

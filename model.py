@@ -127,3 +127,39 @@ class InferenceModel:
             
         
         return generated_text, len_sentence
+    
+    def batch_inference(self, texts, max_new_tokens=1, debug=False):
+        """
+        Performs inference on a given prompt.
+        Returns the decodede output
+        """
+        
+        model_inputs = self.tokenizer(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(self.model.device)
+        # print(f"(model_inputs['input_ids'] {(model_inputs['input_ids'])}")
+        
+        # print(f"len(model_inputs['input_ids'] {len(model_inputs['input_ids'])}")
+        sentence_token_texts = self.tokenizer.convert_ids_to_tokens((model_inputs['input_ids'])[0])
+        # print(f"sentence_token_texts {sentence_token_texts}")
+        
+        input_lengths = [len(self.tokenizer(text, add_special_tokens=False)["input_ids"]) for text in texts]
+        generated_ids = self.model.generate(
+                **model_inputs,
+                do_sample=False,
+                temperature=None,
+                top_p=None,
+                top_k=None,
+                max_new_tokens=max_new_tokens,
+            )
+        generated_ids = [
+            output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+        ]
+        generated_texts = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        # len_sentence = len(self.tokenizer(text, return_offsets_mapping=True, add_special_tokens=False)["input_ids"])
+        # print()
+        if debug:
+            for i, text in enumerate(texts):
+                print(f"\nPrompt {i}: {text}")
+                print(f"Generated: {generated_texts[i]}")
+            
+        
+        return generated_texts, input_lengths
