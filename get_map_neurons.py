@@ -145,7 +145,7 @@ def map(
     path_res = f"{parent_dir}/res/map/{model_name_inf}_{dataset_name_inf}"
     os.makedirs(path_res, exist_ok=True)
     torch.save(result, f"{path_res}/result_{model_name_inf}_{dataset_name_inf}.pt")
-    
+    threshold = threshold if threshold else [0.99, 0.90, 0.8, 0.3, 0.1]
     for i in threshold:
         map_neurons = get_map_neurons(result, tensor, i)
         filename = f"{path_res}/map_{i}_{model_name_inf}_{dataset_name_inf}.pt"
