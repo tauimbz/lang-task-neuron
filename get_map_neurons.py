@@ -125,6 +125,7 @@ def map(
     max_instances: int = None,
     kaggle_dataname_to_save: str =None,
     is_update: bool = None, # is update for kaggle dataset
+    parent_dir: str = None
 ):
 
     """
@@ -142,7 +143,7 @@ def map(
     print(tensor.shape)
     tensor_per_layer = tensor.reshape(tensor.shape[0], tensor.shape[1],num_layer, int(tensor.shape[2]/num_layer))
     result = count_map_neurons(tensor_per_layer)
-    path_res = f"/workspace/res/map/{model_name_inf}_{dataset_name_inf}"
+    path_res = f"{parent_dir}/res/map/{model_name_inf}_{dataset_name_inf}"
     os.makedirs(path_res, exist_ok=True)
     torch.save(result, f"{path_res}/result_{model_name_inf}_{dataset_name_inf}.pt")
     
@@ -168,9 +169,10 @@ def main():
     parser.add_argument("--max_instances", type=int, default=None, help="Maximum instances")
     parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
     parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
+    parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
 
     args = parser.parse_args()
-
+    parent_dir = args.parent_dir_to_save if args.parent_dir_to_save else ""
     # Ensure correct parsing of 'in_kaggle' (True/False)
     in_kaggle_value = args.in_kaggle  # No need to compare to "True" or "False"
     
@@ -188,7 +190,8 @@ def main():
         is_last_token=args.is_last_token,
         max_instances=args.max_instances,
         kaggle_dataname_to_save=args.kaggle_dataname_to_save,
-        is_update=args.is_update
+        is_update=args.is_update,
+        parent_dir=parent_dir
     )
 
 

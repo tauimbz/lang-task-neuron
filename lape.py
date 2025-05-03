@@ -15,8 +15,10 @@ parser.add_argument("--model_name_inf", type=str, required=True, help="Model nam
 parser.add_argument("--dataset_name_inf", type=str, required=True, help="Dataset name")
 parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle")
 parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
-args = parser.parse_args()
+parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
 
+args = parser.parse_args()
+parent_dir = args.parent_dir_to_save if args.parent_dir_to_save else ""
 
 in_kaggle_value = args.in_kaggle  # No need to compare to "True" or "False"
 
@@ -97,7 +99,7 @@ def activation():
         for l, h in enumerate(layer_index):
             layer_index[l] = torch.tensor(h).long()
         final_indice.append(layer_index)
-    path_res = f"/workspace/res/lape"
+    path_res = f"{parent_dir}/res/lape"
     os.makedirs(path_res, exist_ok=True)
     name_to_save = f"{args.model_name_inf}_{args.dataset_name_inf}"
     torch.save(final_indice, f"{path_res}/{name_to_save}")  

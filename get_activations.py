@@ -31,8 +31,10 @@ parser.add_argument("--take_whole", action="store_true", help="Take whole neuron
 parser.add_argument("--max_tokens_overzeros", type=int, default=10000, help="Max tokens overzeros")
 parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
 parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
-args = parser.parse_args()
+parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
 
+args = parser.parse_args()
+parent_dir = args.parent_dir_to_save if args.parent_dir_to_save else ""
 login(args.hf_logintoken)
 model_name = args.model
 
@@ -144,7 +146,7 @@ def cleanup():
     full_raw_values.clear()
 
 def all_languages_dict_to_tensor(all_languages_dict):
-    batch_size = 10000  
+    batch_size = 1000
     chunks = [torch.stack(all_languages_dict[i:i+batch_size], dim=0).cpu() 
               for i in range(0, len(all_languages_dict), batch_size)]
     full_languages_raw_values = torch.cat(chunks, dim=0)  # reassemble after stacking
@@ -205,7 +207,7 @@ def get_neurons(
         cleanup()
         over_zeros_dict["lang"] = lang
         language_dict[n_lang] = lang 
-        ds = load_dataset(dataset_name, lang, split=split, trust_remote_code=True, cache_dir="/workspace/data/hf_datasets")
+        ds = load_dataset(dataset_name, lang, split=split, trust_remote_code=True, cache_dir=f"{parent_dir}/data/hf_datasets")
         dataset_instance = dataset_instance = Dataset(dataset_name, ds)
         if dataset_name.endswith("massive"):
             dataset_instance = Massive(dataset_name, ds)
@@ -272,7 +274,7 @@ def get_neurons(
     del full_raw_values_last_token
     del full_raw_values 
     full_languages_raw_values = all_languages_dict_to_tensor(all_languages)
-    path_res = f"/workspace/res/act/{model_name.split('/')[-1]}"
+    path_res = f"{parent_dir}/res/act/{model_name.split('/')[-1]}"
     os.makedirs(path_res, exist_ok=True)
     torch.save(full_languages_raw_values, f"{path_res}/act_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}.pt")
     torch.save(all_languages_over_zero, f"{path_res}/oz_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}")
