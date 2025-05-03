@@ -279,7 +279,6 @@ def get_neurons(
 
             n_instances += len(texts)
 
-        torch.save(all_languages, f"{path_res}/L_{lang}_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}.pt")
         full_raw_values_avg_tokens = concat_neuron_layers(raw_values_avg_tokens)
         # full_raw_values = merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token)
         full_languages_raw_values = concat_languages(full_languages_raw_values, full_raw_values_avg_tokens)
@@ -296,7 +295,7 @@ def get_neurons(
         
         n_instances = 0
         
-        
+        torch.save(all_languages, f"{path_res}/L_{lang}_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}.pt")
         # break
         
     cleanup()
