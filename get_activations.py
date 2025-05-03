@@ -40,10 +40,10 @@ model_name = args.model
 
 infer_model = InferenceModel(model_name)
 raw_values_avg_tokens = {}
-raw_values_last_token = {}
+# raw_values_last_token = {}
 full_raw_values_avg_tokens = []
-full_raw_values_last_token = []
-full_raw_values = []
+# full_raw_values_last_token = []
+# full_raw_values = []
 num_layers = infer_model.num_layers
 intermediate_size = infer_model.intermediate_size
 over_zeros = torch.zeros(num_layers, intermediate_size, dtype=torch.int32)
@@ -68,7 +68,7 @@ def get_activation_mlp(name, id_prompt_start, id_prompt_end, sequence_length, ma
     """
     def hook_fn(module, input, output):
         global raw_values_avg_tokens
-        global raw_values_last_token
+        # global raw_values_last_token
         global over_zeros
         global over_zeros_dict
 
@@ -88,16 +88,15 @@ def get_activation_mlp(name, id_prompt_start, id_prompt_end, sequence_length, ma
         # print(f"avg_output.shape: {avg_output.shape}")
         save_raw_vals_to_dict(name, raw_values_avg_tokens, avg_output)
         # else:
-        last_output = output.half()[:, -1,:].cpu() # simpen the last token
-        # print(f"last_output.shape: {last_output.shape}")
-        save_raw_vals_to_dict(name, raw_values_last_token, last_output)
+        # last_output = output.half()[:, -1,:].cpu() # simpen the last token
+        # # print(f"last_output.shape: {last_output.shape}")
+        # save_raw_vals_to_dict(name, raw_values_last_token, last_output)
         # print(f"ini raw_values_avg_token {raw_values_avg_tokens}")
         # print(len(raw_values_last_token.values()))
     return hook_fn
 
-def concat_neuron_layers(raw_values_avg_tokens, raw_values_last_token):
+def concat_neuron_layers(raw_values_avg_tokens):
     full_raw_values_avg_tokens = list(raw_values_avg_tokens.values())[0]
-    full_raw_values_last_token = list(raw_values_last_token.values())[0]
     
     
     # print(f"full_raw_values_avg_tokens.shape {full_raw_values_avg_tokens.shape}")
@@ -105,16 +104,16 @@ def concat_neuron_layers(raw_values_avg_tokens, raw_values_last_token):
     for i in list(raw_values_avg_tokens.values())[1:]:
         # print(i.shape)
         full_raw_values_avg_tokens = torch.cat([full_raw_values_avg_tokens, i], dim=-1).cpu()
-    for i in list(raw_values_last_token.values())[1:]:
-        full_raw_values_last_token = torch.cat([full_raw_values_last_token, i], dim=-1).cpu()
-    # print(f"shape full_raw_values_last_token {full_raw_values_last_token.shape}")
-    return full_raw_values_avg_tokens, full_raw_values_last_token
+    # for i in list(raw_values_last_token.values())[1:]:
+    #     full_raw_values_last_token = torch.cat([full_raw_values_last_token, i], dim=-1).cpu()
+    # # print(f"shape full_raw_values_last_token {full_raw_values_last_token.shape}")
+    # return full_raw_values_avg_tokens, full_raw_values_last_token
 
 
-def merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token):
-    # print(f"shape full_raw_values_last_token {full_raw_values_last_token.shape}")
-    full_raw_values = torch.stack((full_raw_values_avg_tokens, full_raw_values_last_token), dim=0).cpu()
-    return full_raw_values
+# def merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token):
+#     # print(f"shape full_raw_values_last_token {full_raw_values_last_token.shape}")
+#     full_raw_values = torch.stack((full_raw_values_avg_tokens, full_raw_values_last_token), dim=0).cpu()
+#     return full_raw_values
 
 
 def register_hook(infer_model, handlers, id_prompt_start, id_prompt_end, sequence_length, max_tokens_overzeros=10000): 
@@ -140,10 +139,10 @@ def remove_hooks(handlers):
 
 def cleanup():
     raw_values_avg_tokens.clear()
-    raw_values_last_token.clear()
+    # raw_values_last_token.clear()
     full_raw_values_avg_tokens.clear()
-    full_raw_values_last_token.clear()
-    full_raw_values.clear()
+    # full_raw_values_last_token.clear()
+    # full_raw_values.clear()
 
 def all_languages_dict_to_tensor(all_languages_dict):
     batch_size = 1000
@@ -179,12 +178,12 @@ def get_neurons(
     selected_langs: specifiy selected_langs to be ran.
     """
     # infer_model = InferenceModel(model_name)
-    global over_zeros_dict, over_zeros, raw_values_avg_tokens, raw_values_last_token
+    global over_zeros_dict, over_zeros, raw_values_avg_tokens
     raw_values_avg_tokens = {}
-    raw_values_last_token = {}
+    # raw_values_last_token = {}
     full_raw_values_avg_tokens = []
-    full_raw_values_last_token = []
-    full_raw_values = []
+    # full_raw_values_last_token = []
+    # full_raw_values = []
 
     
     eval_result = {}
@@ -197,7 +196,6 @@ def get_neurons(
     language_dict = {}
     selected_langs = selected_langs if selected_langs != None else configs
     print(selected_langs)
-    eval_result = {}
     
     for lang in selected_langs:
         if lang.startswith("all"):
@@ -252,9 +250,9 @@ def get_neurons(
         
             # print(f"🔵 After inference, raw_values_avg_tokens keys: {list(raw_values_avg_tokens.keys())}")
         # print(f"🔵 After inference language, raw_values_avg_tokens: {list(raw_values_avg_tokens.values())}")
-        full_raw_values_avg_tokens, full_raw_values_last_token = concat_neuron_layers(raw_values_avg_tokens, raw_values_last_token)
-        full_raw_values = merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token)
-        all_languages.append(full_raw_values)
+        full_raw_values_avg_tokens = concat_neuron_layers(raw_values_avg_tokens)
+        # full_raw_values = merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token)
+        all_languages.append(full_raw_values_avg_tokens)
         all_languages_over_zero.append(over_zeros_dict)
         over_zeros = torch.zeros(infer_model.num_layers, infer_model.intermediate_size, dtype=torch.int32)
         over_zeros_dict = {"lang":0,"num" : 0, "over_zero" : torch.tensor([])}
@@ -269,10 +267,10 @@ def get_neurons(
         # print(infer_model.model.model.layers[1].mlp.act_fn._forward_hooks)
     cleanup()
     del raw_values_avg_tokens
-    del raw_values_last_token
+    # del raw_values_last_token
     del full_raw_values_avg_tokens
-    del full_raw_values_last_token
-    del full_raw_values 
+    # del full_raw_values_last_token
+    # del full_raw_values 
     full_languages_raw_values = all_languages_dict_to_tensor(all_languages)
     path_res = f"{parent_dir}/res/act/{model_name.split('/')[-1]}"
     os.makedirs(path_res, exist_ok=True)
