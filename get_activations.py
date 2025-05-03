@@ -238,8 +238,7 @@ def get_neurons(
         for start_idx in tqdm(range(0, max_instances, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
             end_idx = min(start_idx + batch_size, max_instances)
             batch_data = ds.select(range(start_idx, end_idx))
-            # print(f"ds: {ds}")
-            # print(f"batch_data: {batch_data}")
+            
             texts = []
             slice_ranges = []
             seq_lengths = []
@@ -257,24 +256,20 @@ def get_neurons(
             generated_texts, len_sentences_model = infer_model.batch_inference(texts, debug=debug)
             # assert len_sentence == len_sentence_model, f"Mismatch len sentence model {len_sentence_model} and prompt {len_sentence}"
 
-            # Clean up hooks
             clean_hooks(infer_model)
             remove_hooks(handlers)
 
             n_instances += batch_size
 
-            # Debugging output (if enabled)
             if debug:
-                # Tokenize the whole batch of texts with padding
+                
                 model_input = infer_model.tokenizer(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(infer_model.model.device)
+                input_ids = model_input['input_ids']  # shape: [batch_size, max_seq_length]
                 
-                # Get the input_ids (token IDs for the entire batch)
-                input_ids = model_input['input_ids']  # Shape: [batch_size, max_seq_length]
                 
-                # Get the attention mask (1 for real tokens, 0 for padding)
-                attention_mask = model_input['attention_mask']  # Shape: [batch_size, max_seq_length]
+                attention_mask = model_input['attention_mask']  
                 
-                # Convert input_ids to tokens for the whole batch
+                
                 sentence_token_texts = [infer_model.tokenizer.convert_ids_to_tokens(input_id) for input_id in input_ids]
 
                 for i, text in enumerate(texts):
@@ -282,7 +277,7 @@ def get_neurons(
                     print(f"text: {text}")
                     print(f"generated_text: {generated_texts[i]}")
                     
-                    # Tokenize the single prompt for inspection
+                    
                     model_input = infer_model.tokenizer([text], return_tensors="pt", add_special_tokens=False).to(infer_model.model.device)
                     input_ids = model_input['input_ids'][0]
                     print(f"input_ids: {input_ids}")
@@ -291,40 +286,7 @@ def get_neurons(
                     print(f"with prompt: {sentence_token_texts}")
                     start, end = slice_ranges[i]
                     print(f"without prompt: {sentence_token_texts[start:end]}\nshape: {len(sentence_token_texts[start:end])}")
-            # Optionally, handle batch-level operations here (like aggregating results)
-            print(f"Processed batch starting at index {start_idx} to {end_idx}")
-        
-        # for data in tqdm(ds, desc=f"Processing {lang} Examples", leave=False):
-        #     if max_instances and n_instances >= max_instances:
-        #         break
-        #     detail_data = dataset_instance.get_detail_inference(data)
-        #     # print(f"detail_data: {detail_data}")
-        #     id_prompt_start, id_prompt_end, len_sentence, prompt_whole = dataset_instance.get_index_start_end_prompt(infer_model, detail_data, infer_model.model_name, is_predict, take_whole)
-        #     clean_hooks(infer_model)
-        #     register_hook(infer_model, handlers, id_prompt_start, id_prompt_end, len_sentence, max_tokens_overzeros)
-        #     input_text = ""
-        #     text = infer_model.get_templated_prompt(prompt_whole, apply_template)
-            
-        #     generated_text, len_sentence_model = infer_model.inference(text, debug=debug)
-        #     assert len_sentence == len_sentence_model, f"Mismatch len sentence model {len_sentence_model} and prompt {len_sentence}"
-        #     clean_hooks(infer_model)
-        #     remove_hooks(handlers)
-        #     n_instances += 1
-        #     # break
-        #     if debug:
-        #         print(f"text: {text}")
-        #         print(f"generated_text: {generated_text}")               
-        #         # print(f"prompt_whole: {prompt_whole} \n size: {infer_model.tokenizer([prompt_whole], return_tensors='pt', add_special_tokens=False).to(infer_model.model.device)['input_ids'].shape}")
-        #         model_inputs = infer_model.tokenizer([text], return_tensors="pt", add_special_tokens=False).to(infer_model.model.device)
-        #         print(f"(model_inputs['input_ids'] {(model_inputs['input_ids'])}")
-        #         # print(f"len(model_inputs['input_ids'] {len(model_inputs['input_ids'])}")
-        #         sentence_token_texts = infer_model.tokenizer.convert_ids_to_tokens((model_inputs['input_ids'])[0])
-        #         print(f"with prompt: {sentence_token_texts}")
-        #         print(f"without prompt: {sentence_token_texts[id_prompt_start:id_prompt_end]}\n shape:{len(sentence_token_texts[id_prompt_start:id_prompt_end])}")
-                
-        
-            # print(f"🔵 After inference, raw_values_avg_tokens keys: {list(raw_values_avg_tokens.keys())}")
-        # print(f"🔵 After inference language, raw_values_avg_tokens: {list(raw_values_avg_tokens.values())}")
+          
         full_raw_values_avg_tokens = concat_neuron_layers(raw_values_avg_tokens)
         # full_raw_values = merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token)
         full_languages_raw_values = concat_languages(full_languages_raw_values, full_raw_values_avg_tokens)
@@ -338,13 +300,12 @@ def get_neurons(
         print(f"Done with lang: {lang}")
         for handler in handlers:
             handler.remove()
-        # if n_lang >= 2: break # 
+        
         n_instances = 0
-        print(f"all_languages: {len(all_languages)}")
-        print(f"all_languages tensor shape: {(all_languages[0].shape)}")
+        
         torch.save(all_languages, f"{path_res}/L_{lang}_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}.pt")
         # break
-        # print(infer_model.model.model.layers[1].mlp.act_fn._forward_hooks)
+        
     cleanup()
     del raw_values_avg_tokens
     # del raw_values_last_token
