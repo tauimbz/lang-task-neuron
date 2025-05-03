@@ -138,7 +138,6 @@ def map(
         download_from_kaggle(dataset_kaggle, filename)
         tensor = torch.load(f"data/{filename}", weights_only=True)
     else: tensor = torch.load(filename, weights_only=True)
-    tensor = tensor[:,0,:,:] if not is_last_token else tensor[:,1,:,:] 
     tensor = tensor[:,:max_instances,:] if max_instances else tensor
     print(tensor.shape)
     tensor_per_layer = tensor.reshape(tensor.shape[0], tensor.shape[1],num_layer, int(tensor.shape[2]/num_layer))
