@@ -1,6 +1,6 @@
 from huggingface_hub import login
-from model import InferenceModel
 from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
+from model import InferenceModel
 from datasets import load_dataset, get_dataset_config_names
 import pandas as pd
 import torch
@@ -34,10 +34,25 @@ parser.add_argument("--is_update", action='store_true', help="Flag to update Kag
 parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
 parser.add_argument("--batch_size", type=int, default=None, help="Batch size")
 
+
+
+
+# MODIF FOR DEBUG
 args = parser.parse_args()
+# args, unknown = parser.parse_known_args()
+# args.model = "Qwen/Qwen2.5-0.5B-Instruct"
+# args.hf_logintoken = "***REMOVED***"
+# args.dataset_name = "Muennighoff/flores200"
+# args.split = "devtest"
+# args.apply_template = True
+# args.max_tokens_overzeros = 40
+# args.selected_langs = [
+#     "deu_Latn", "eng_Latn"]
+# args.max_instances = 2
+# args.batch_size = 1
+# args.debug = True
 
-
-
+# END MODIF
 parent_dir = args.parent_dir_to_save if args.parent_dir_to_save else ""
 login(args.hf_logintoken)
 model_name = args.model
@@ -65,7 +80,7 @@ def clean_hooks(infer_model):
         mlp = infer_model.model.model.layers[i].mlp
         mlp.act_fn._forward_hooks.clear()
 
-def get_activation_mlp(name, slice_ranges, sequence_lengths, max_tokens_overzeros = 10000): 
+def get_activation_mlp(name, slice_ranges, sequence_lengths, max_tokens_overzeros = 10000, do_overzero=True, num_row_ozs=None): 
     """
         name (str): buat namain layer
         is_averaged_tokens (boolean): true if avergaed across tokens, else get the last token
@@ -76,44 +91,29 @@ def get_activation_mlp(name, slice_ranges, sequence_lengths, max_tokens_overzero
         global over_zeros
         global over_zeros_dict
 
-        # print(f"output shape {output.shape}")
-        # assert output.size(1) == sequence_length, f"Mismatch: output.size(1) = {output.size(1)}, sequence_length = {sequence_length}"
-        
-        number_of_tokens = sum([(end-start) for i, (start, end) in enumerate(slice_ranges)])
-        # print(f"number of tokens: {number_of_tokens}")
-        if over_zeros_dict['num'] + number_of_tokens <= max_tokens_overzeros:
-            overzero_perlayer = [(output[:, start:end, :] > 0).detach().sum(dim=(0,1)).to(dtype=torch.int32).cpu() for i, (start, end) in enumerate(slice_ranges)]
+        if do_overzero:
+            slice_oz = slice_ranges[:num_row_ozs]
+            overzero_perlayer = [
+                (output[i, start:end, :] > 0).detach().sum(dim=0).to(dtype=torch.int32).cpu()
+                for i, (start, end) in enumerate(slice_oz)
+            ]
             over_zeros[int(name), :] += sum(overzero_perlayer)
-            over_zeros_dict['num'] += number_of_tokens
             over_zeros_dict['over_zero'] = over_zeros
-            # print(f"over_zeros.shape: {over_zeros.shape}")
-                
+        
         means = [output[i, start:end, :].half().mean(dim=0).cpu() for i, (start, end) in enumerate(slice_ranges)]
         avg_output = torch.stack(means, dim=0).cpu() 
-        # avg_output = output[:,id_prompt_start:id_prompt_end,:].detach().half().mean(dim=1).cpu() 
-        # print(f"avg khusus {avg_output.shape}")
-        # print(f"avg_output.shape: {avg_output.shape}")
         save_raw_vals_to_dict(name, raw_values_avg_tokens, avg_output)
-        # else:
-        # last_output = output.half()[:, -1,:].cpu() # simpen the last token
-        # # print(f"last_output.shape: {last_output.shape}")
-        # save_raw_vals_to_dict(name, raw_values_last_token, last_output)
-        # print(f"ini raw_values_avg_token {raw_values_avg_tokens}")
-        # print(len(raw_values_last_token.values()))
+        
     return hook_fn
 
 def concat_neuron_layers(raw_values_avg_tokens):
     full_raw_values_avg_tokens = list(raw_values_avg_tokens.values())[0]
     
     
-    # print(f"full_raw_values_avg_tokens.shape {full_raw_values_avg_tokens.shape}")
-    # print(full_raw_values_last_token.shape)
     for i in list(raw_values_avg_tokens.values())[1:]:
         # print(i.shape)
         full_raw_values_avg_tokens = torch.cat([full_raw_values_avg_tokens, i], dim=-1).cpu()
-    # for i in list(raw_values_last_token.values())[1:]:
-    #     full_raw_values_last_token = torch.cat([full_raw_values_last_token, i], dim=-1).cpu()
-    # # print(f"shape full_raw_values_last_token {full_raw_values_last_token.shape}")
+   
     return full_raw_values_avg_tokens
 
 
@@ -123,14 +123,15 @@ def concat_neuron_layers(raw_values_avg_tokens):
 #     return full_raw_values
 
 
-def register_hook(infer_model, handlers, slice_ranges, sequence_lengths, max_tokens_overzeros=10000): 
+def register_hook(infer_model, handlers, slice_ranges, sequence_lengths, do_overzero=True, num_row_ozs=None): 
     # remove_hooks(handlers)  # Remove any existing hooks before adding new ones
     clean_hooks(infer_model)
     num_layers = infer_model.num_layers
     remove_hooks(handlers)
+    
     for i in range (num_layers):
         mlp = infer_model.model.model.layers[i].mlp
-        handlers.append(mlp.act_fn.register_forward_hook(get_activation_mlp(f"{i}", slice_ranges, sequence_lengths, max_tokens_overzeros)))
+        handlers.append(mlp.act_fn.register_forward_hook(get_activation_mlp(f"{i}", slice_ranges, sequence_lengths, do_overzero=do_overzero, num_row_ozs=num_row_ozs)))
     # print(infer_model.model.model.layers[1].mlp.act_fn._forward_hooks)
 
     # for handler in handlers:
@@ -182,7 +183,7 @@ def get_neurons(
     kaggle_dataname_to_save=None, is_update=False, batch_size=1, 
 
 ):
-
+    infer_model.model.eval()
     """
     infer_model: HF model InferenceModel
     dataset_name: dataset name from HF
@@ -238,7 +239,7 @@ def get_neurons(
         for start_idx in tqdm(range(0, max_instances, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
             end_idx = min(start_idx + batch_size, max_instances)
             batch_data = ds.select(range(start_idx, end_idx))
-            
+
             texts = []
             slice_ranges = []
             seq_lengths = []
@@ -251,42 +252,33 @@ def get_neurons(
                 seq_lengths.append(len_sentence)
                 text = infer_model.get_templated_prompt(prompt_whole, apply_template)
                 texts.append(text)
+
+            # Assume full batch, will trim if needed
+            do_overzero = True
+            token_lens = [end - start for (start, end) in slice_ranges]
+            accumulated = 0
+            cut_index = len(texts)
+
+            for i, tok_len in enumerate(token_lens):
+                if over_zeros_dict['num'] + accumulated + tok_len > max_tokens_overzeros:
+                    cut_index = i
+                    break
+                accumulated += tok_len
+
+            if cut_index == 0:
+                do_overzero = False
+
+            model_inputs, input_lengths, slice_ranges = infer_model.batch_tokenize(texts, slice_ranges)
             clean_hooks(infer_model)
-            register_hook(infer_model, handlers, slice_ranges, seq_lengths, max_tokens_overzeros)
-            generated_texts, len_sentences_model = infer_model.batch_inference(texts, debug=debug)
-            # assert len_sentence == len_sentence_model, f"Mismatch len sentence model {len_sentence_model} and prompt {len_sentence}"
+            over_zeros_dict['num'] += accumulated if do_overzero else 0
+            register_hook(infer_model, handlers, slice_ranges, seq_lengths, do_overzero=do_overzero, num_row_ozs=cut_index)
+            generated_texts = infer_model.batch_inference(texts, model_inputs, slice_ranges, max_new_tokens=1, debug=debug)
 
             clean_hooks(infer_model)
             remove_hooks(handlers)
 
-            n_instances += batch_size
+            n_instances += len(texts)
 
-            if debug:
-                
-                model_input = infer_model.tokenizer(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(infer_model.model.device)
-                input_ids = model_input['input_ids']  # shape: [batch_size, max_seq_length]
-                
-                
-                attention_mask = model_input['attention_mask']  
-                
-                
-                sentence_token_texts = [infer_model.tokenizer.convert_ids_to_tokens(input_id) for input_id in input_ids]
-
-                for i, text in enumerate(texts):
-                    print(f"\n--- Debug info for input {i} ---")
-                    print(f"text: {text}")
-                    print(f"generated_text: {generated_texts[i]}")
-                    
-                    
-                    model_input = infer_model.tokenizer([text], return_tensors="pt", add_special_tokens=False).to(infer_model.model.device)
-                    input_ids = model_input['input_ids'][0]
-                    print(f"input_ids: {input_ids}")
-            
-                    sentence_token_texts = sentence_token_texts[i]
-                    print(f"with prompt: {sentence_token_texts}")
-                    start, end = slice_ranges[i]
-                    print(f"without prompt: {sentence_token_texts[start:end]}\nshape: {len(sentence_token_texts[start:end])}")
-          
         full_raw_values_avg_tokens = concat_neuron_layers(raw_values_avg_tokens)
         # full_raw_values = merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token)
         full_languages_raw_values = concat_languages(full_languages_raw_values, full_raw_values_avg_tokens)

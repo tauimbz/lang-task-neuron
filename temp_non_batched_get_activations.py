@@ -1,6 +1,6 @@
 from huggingface_hub import login
-from model import InferenceModel
 from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
+from model import InferenceModel
 from datasets import load_dataset, get_dataset_config_names
 import pandas as pd
 import torch
@@ -34,6 +34,25 @@ parser.add_argument("--is_update", action='store_true', help="Flag to update Kag
 parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
 
 args = parser.parse_args()
+
+
+
+# MODIF FOR DEBUG
+# args = parser.parse_args()
+# args, unknown = parser.parse_known_args()
+# args.model = "Qwen/Qwen2.5-0.5B-Instruct"
+# args.hf_logintoken = "***REMOVED***"
+# args.dataset_name = "Muennighoff/flores200"
+# args.split = "devtest"
+# args.apply_template = True
+# args.max_tokens_overzeros = 40
+# args.selected_langs = [
+#     "deu_Latn", "eng_Latn"]
+# args.max_instances = 2
+# args.batch_size = 32
+# END MODIF
+
+
 parent_dir = args.parent_dir_to_save if args.parent_dir_to_save else ""
 login(args.hf_logintoken)
 model_name = args.model
@@ -78,9 +97,20 @@ def get_activation_mlp(name, id_prompt_start, id_prompt_end, sequence_length, ma
         number_of_tokens = id_prompt_end-id_prompt_start
         # print(f"number of tokens: {number_of_tokens}")
         if over_zeros_dict['num'] + number_of_tokens <= max_tokens_overzeros:
-            over_zeros[int(name), :] += (output[:,id_prompt_start:id_prompt_end,:] > 0).detach().sum(dim=(0,1)).to(dtype=torch.int32).cpu()
-            over_zeros_dict['num'] += number_of_tokens
+            over_zero = (output[:,id_prompt_start:id_prompt_end,:] > 0).detach().sum(dim=(0,1)).to(dtype=torch.int32).cpu()
+            over_zeros[int(name), :] += over_zero
+            # print(f"a: {(output[:,id_prompt_start:id_prompt_end,:] > 0).detach().sum(dim=(0,1)).to(dtype=torch.int32).cpu()}, shape: {output[:, start:end, :].shape}")
+            # cc = output[:,id_prompt_start:id_prompt_end,:].detach().cpu()
+            # print(f"a: {cc}, shape: {cc.shape}")
+            # nonbatched.append(output[0,id_prompt_start:id_prompt_end,:] )
+            # over_zeros_dict['num'] += number_of_tokens
             over_zeros_dict['over_zero'] = over_zeros
+            tensor = (output[0,id_prompt_start:id_prompt_end,:] > 0).detach().to(dtype=torch.int32).cpu()
+            tambahan = (output[0,id_prompt_start:id_prompt_end,:] > 0).detach().sum(dim=(0,1)).to(dtype=torch.int32).cpu()
+            # print(f"y: {tensor}")
+            # print(f"tambahan: {tambahan}")
+            # print(f"over_zeros_dict: {over_zeros_dict}")
+            
             # print(f"over_zeros.shape: {over_zeros.shape}")
         
         avg_output = output[:,id_prompt_start:id_prompt_end,:].detach().half().mean(dim=1).cpu() 
@@ -226,10 +256,15 @@ def get_neurons(
             # print(f"detail_data: {detail_data}")
             id_prompt_start, id_prompt_end, len_sentence, prompt_whole = dataset_instance.get_index_start_end_prompt(infer_model, detail_data, infer_model.model_name, is_predict, take_whole)
             clean_hooks(infer_model)
+            number_of_tokens = id_prompt_end-id_prompt_start
+            # print(f"number of tokens: {number_of_tokens}")
+            
             register_hook(infer_model, handlers, id_prompt_start, id_prompt_end, len_sentence, max_tokens_overzeros)
             text = infer_model.get_templated_prompt(prompt_whole, apply_template)
             
             generated_text, len_sentence_model = infer_model.inference(text, debug=debug)
+            if over_zeros_dict['num'] + number_of_tokens <= max_tokens_overzeros: 
+                over_zeros_dict['num'] += number_of_tokens
             assert len_sentence == len_sentence_model, f"Mismatch len sentence model {len_sentence_model} and prompt {len_sentence}"
             clean_hooks(infer_model)
             remove_hooks(handlers)
@@ -271,7 +306,6 @@ def get_neurons(
     del full_raw_values_avg_tokens
     # del full_raw_values_last_token
     # del full_raw_values 
-    print("HEY")
     print(f"all_languages: {len(all_languages)}")
     full_languages_raw_values = all_languages_dict_to_tensor(all_languages)
 
@@ -286,7 +320,7 @@ def get_neurons(
 
     return full_languages_raw_values, all_languages_over_zero, language_dict
 
-a, b, c = get_neurons(
+d, e, f = get_neurons(
         model_name=args.model,
         infer_model=infer_model,
         dataset_name=args.dataset_name,

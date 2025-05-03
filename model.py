@@ -16,6 +16,7 @@ class InferenceModel:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
         self.num_layers = self.get_num_layers()
         self.intermediate_size = self.get_inter_size()
+        self.model.eval()
 
     def get_templated_prompt(self, prompt, apply_template=True):
         messages = [] # supposed to be text appended by the chat template.
@@ -127,21 +128,56 @@ class InferenceModel:
             
         
         return generated_text, len_sentence
+
+    def batch_tokenize(self, texts, slice_ranges):
+        slice_ranges_pad_left = slice_ranges.copy() 
+        model_inputs = self.tokenizer(texts, return_tensors="pt", padding=True,  padding_side="left", add_special_tokens=False).to(self.model.device)
+        sentence_token_texts = self.tokenizer.convert_ids_to_tokens((model_inputs['input_ids'])[0])
+        # print(f"sentence_token_texts {sentence_token_texts}")
+        
+        pad_token_id = self.tokenizer.pad_token_id
+        input_ids = model_inputs['input_ids']  # (batch, seq_len)
+        # print(f"input_ids: {input_ids}")
+        pad_counts = (input_ids == pad_token_id).sum(dim=1).tolist()  # [pad_count_0, pad_count_1, ...]
+        # print(f"pad_counts: {pad_counts}")
+
+        slice_ranges_pad_left = [(start + pad, end + pad) for (start, end), pad in zip(slice_ranges_pad_left, pad_counts)]
+
+        input_lengths = [len(self.tokenizer(text, add_special_tokens=False)["input_ids"]) for text in texts]
+
+        # slice_ranges_pad_left = []
+        # seq_len = input_ids[1]
+        # for i, text in enumerate(texts):
+        #     unpadded_len = len(self.tokenizer(text, add_special_tokens=False)["input_ids"])
+        #     pad = seq_len - unpadded_len
+        #     start_raw, end_raw = slice_ranges[i]
+        #     slice_ranges_pad_left.append((start_raw + pad, end_raw + pad))
+        return model_inputs, input_lengths, slice_ranges_pad_left
     
-    def batch_inference(self, texts, max_new_tokens=1, debug=False):
+    def batch_inference(self, texts, model_inputs, slice_ranges_pad_left, max_new_tokens=1, debug=False):
         """
         Performs inference on a given prompt.
         Returns the decodede output
         """
+        if debug:
+            input_ids = model_inputs['input_ids']  # shape: [batch_size, max_seq_length]
+            attention_mask = model_inputs['attention_mask']  
+            sentence_token_texts = [self.tokenizer.convert_ids_to_tokens(input_id) for input_id in input_ids]
+            print(f"sentence_token_texts : {sentence_token_texts}\n SHape : {len(sentence_token_texts)}")
+            for i, text in enumerate(texts):
+                print(f"\n--- Debug info for input {i} ---")
+                print(f"text: {text}")
+                
+                input_ids = model_inputs['input_ids'][i]
+                print(f"input_ids: {input_ids}")
         
-        model_inputs = self.tokenizer(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(self.model.device)
-        # print(f"(model_inputs['input_ids'] {(model_inputs['input_ids'])}")
+                sentence_token_text = sentence_token_texts[i]
+                print(f"with prompt: {sentence_token_text}")
+                start, end = slice_ranges_pad_left[i]
+                print(f"start: {start}, end: {end}")
+                print(f"without prompt: {sentence_token_text[start:end]}\nshape: {len(sentence_token_text[start:end])}")
         
-        # print(f"len(model_inputs['input_ids'] {len(model_inputs['input_ids'])}")
-        sentence_token_texts = self.tokenizer.convert_ids_to_tokens((model_inputs['input_ids'])[0])
-        # print(f"sentence_token_texts {sentence_token_texts}")
         
-        input_lengths = [len(self.tokenizer(text, add_special_tokens=False)["input_ids"]) for text in texts]
         generated_ids = self.model.generate(
                 **model_inputs,
                 do_sample=False,
@@ -156,10 +192,7 @@ class InferenceModel:
         generated_texts = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
         # len_sentence = len(self.tokenizer(text, return_offsets_mapping=True, add_special_tokens=False)["input_ids"])
         # print()
-        if debug:
-            for i, text in enumerate(texts):
-                print(f"\nPrompt {i}: {text}")
-                print(f"Generated: {generated_texts[i]}")
+        
             
         
-        return generated_texts, input_lengths
+        return generated_texts
