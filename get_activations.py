@@ -166,7 +166,7 @@ def concat_languages(tensor, savees):
     else:
         return torch.cat([tensor, perlanguage], dim=0)
 
-path_res = f"{parent_dir}/res/act/{model_name.split('/')[-1]}"
+path_res = f"{parent_dir}res/act/{model_name.split('/')[-1]}"
 
 
 os.makedirs(path_res, exist_ok=True)

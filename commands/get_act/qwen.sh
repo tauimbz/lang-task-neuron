@@ -8,7 +8,7 @@ python get_activations.py  \
     --kaggle_dataname_to_save "act-qwen7-neurons" \
     --selected_langs "deu_Latn" "eng_Latn" "fra_Latn" "ind_Latn" "jpn_Jpan" "kor_Hang" "zsm_Latn" "nld_Latn" "por_Latn" "rus_Cyrl" "vie_Latn" "zho_Hans"\
     --batch_size 32 \
-    # --parent_dir_to_save "/workspace" \
+    # --parent_dir_to_save "/workspace/" \
     # --max_instances 1000 \
     # --is_update \
     # --debug \

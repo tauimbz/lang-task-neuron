@@ -99,7 +99,7 @@ def activation():
         for l, h in enumerate(layer_index):
             layer_index[l] = torch.tensor(h).long()
         final_indice.append(layer_index)
-    path_res = f"{parent_dir}/res/lape"
+    path_res = f"{parent_dir}res/lape"
     os.makedirs(path_res, exist_ok=True)
     name_to_save = f"{args.model_name_inf}_{args.dataset_name_inf}"
     torch.save(final_indice, f"{path_res}/{name_to_save}")  

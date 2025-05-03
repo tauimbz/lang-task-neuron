@@ -142,7 +142,7 @@ def map(
     print(tensor.shape)
     tensor_per_layer = tensor.reshape(tensor.shape[0], tensor.shape[1],num_layer, int(tensor.shape[2]/num_layer))
     result = count_map_neurons(tensor_per_layer)
-    path_res = f"{parent_dir}/res/map/{model_name_inf}_{dataset_name_inf}"
+    path_res = f"{parent_dir}res/map/{model_name_inf}_{dataset_name_inf}"
     os.makedirs(path_res, exist_ok=True)
     torch.save(result, f"{path_res}/result_{model_name_inf}_{dataset_name_inf}.pt")
     threshold = threshold if threshold else [0.99, 0.90, 0.8, 0.3, 0.1]

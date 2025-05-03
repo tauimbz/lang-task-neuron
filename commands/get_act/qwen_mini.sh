@@ -15,4 +15,4 @@
     # --max_lang \
     # --selected_langs "deu_Latn" "eng_Latn" "fra_Latn" "ind_Latn" "jpn_Jpan" "kor_Hang" "zsm_Latn" "nld_Latn" "por_Latn" "rus_Cyrl" "vie_Latn" "zho_Hans"\
     # --is_predict \
-    # --parent_dir_to_save "/workspace"
+    # --parent_dir_to_save "/workspace/"
