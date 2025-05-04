@@ -138,7 +138,7 @@ def get_top_bottom_k(result, k=1000):
     scores_tensor = result.clone()
     n_lang, n_layer, n_neuron = scores_tensor.shape
     layer_indices, neuron_indices = get_k(scores_tensor, k, True)
-    res = [[[] for _ in range(n_layer)] for _ in range(n_lang)]  # 6 langs × 24 layers
+    res = [[[] for _ in range(n_layer)] for _ in range(n_lang)]  
     add_to_res(res, n_lang, n_layer, layer_indices, neuron_indices)
     layer_indices, neuron_indices = get_k(scores_tensor, k, False)
     add_to_res(res, n_lang, n_layer, layer_indices, neuron_indices)
@@ -175,8 +175,8 @@ def map(
     kaggle_dataname_to_save: str =None,
     is_update: bool = None, # is update for kaggle dataset
     parent_dir: str = None,
-    result_exist: bool = None,
-    in_kaggle_result: str = None,
+    result_exist: bool = False,
+    data_kaggle_result: str = None,
     res_filename: str = None, # if results already exists and want to compute map threshold or top/bottomk
 ):
 
@@ -190,11 +190,13 @@ def map(
     result = torch.tensor([])
 
     if result_exist:
-        if in_kaggle_result:
-            download_from_kaggle(dataset_kaggle, res_filename)
+        print(f"processing from existing AP tensor")
+        if data_kaggle_result:
+            download_from_kaggle(data_kaggle_result, res_filename)
             result = torch.load(f"data/{res_filename}", weights_only=True)
         else: result = torch.load(res_filename, weights_only=True)
     else:
+        print(f"processing AP tensor from scratch")
         tensor = torch.tensor([])
         if in_kaggle:
             download_from_kaggle(dataset_kaggle, filename)
@@ -241,9 +243,9 @@ def main():
     parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
     parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
     parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
-    parser.add_argument("--result_exist", type=bool, default=False, help="If map result already exist and wants to compute threshold/bottomtopk")
-    parser.add_argument("--in_kaggle_result", type=str, default=None, help="Flag if result_exist nd is in Kaggle dataset")
-    parser.add_argument("--res_filename", type=str, default=None, help="Directory for saving results")
+    parser.add_argument("--result_exist", action='store_true', help="If map result already exist and wants to compute threshold/bottomtopk")
+    parser.add_argument("--data_kaggle_result", type=str, default=None, help="dataset name if result_exist nd is in Kaggle dataset")
+    parser.add_argument("--res_filename", type=str, default=None, help="filename that saves results")
 
     args = parser.parse_args()
     parent_dir = args.parent_dir_to_save if args.parent_dir_to_save else ""
@@ -268,7 +270,7 @@ def main():
         is_update=args.is_update,
         parent_dir=parent_dir,
         result_exist=args.result_exist,
-        in_kaggle_result=args.in_kaggle_result,
+        data_kaggle_result=args.data_kaggle_result,
         res_filename=args.res_filename
     )
 
