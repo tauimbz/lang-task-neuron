@@ -29,6 +29,7 @@ parser.add_argument("--apply_template", action="store_true", help="Whether to ap
 parser.add_argument("--debug", action="store_true", help="Enable debug mode")
 parser.add_argument("--take_whole", action="store_true", help="Take whole neuron from prompt if is_predict True")
 parser.add_argument("--max_tokens_overzeros", type=int, default=10000, help="Max tokens overzeros")
+parser.add_argument("--max_sentence_avgs", type=int, default=500, help="Max sentences to count average of for map")
 parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
 parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
 parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
@@ -45,11 +46,12 @@ args = parser.parse_args()
 # args.dataset_name = "Muennighoff/flores200"
 # args.split = "devtest"
 # args.apply_template = True
-# args.max_tokens_overzeros = 40
+# args.max_tokens_overzeros = 113
 # args.selected_langs = [
 #     "deu_Latn", "eng_Latn"]
-# args.max_instances = 2
-# args.batch_size = 1
+# args.max_instances = None
+# args.max_sentence_avgs = 2
+# args.batch_size = 32
 # args.debug = True
 
 # END MODIF
@@ -80,7 +82,7 @@ def clean_hooks(infer_model):
         mlp = infer_model.model.model.layers[i].mlp
         mlp.act_fn._forward_hooks.clear()
 
-def get_activation_mlp(name, slice_ranges, sequence_lengths, max_tokens_overzeros = 10000, do_overzero=True, num_row_ozs=None): 
+def get_activation_mlp(name, slice_ranges, sequence_lengths, max_tokens_overzeros = 10000, do_overzero=True, num_row_ozs=None, do_sent_avg=True, num_row_s_avg=None): 
     """
         name (str): buat namain layer
         is_averaged_tokens (boolean): true if avergaed across tokens, else get the last token
@@ -99,10 +101,11 @@ def get_activation_mlp(name, slice_ranges, sequence_lengths, max_tokens_overzero
             ]
             over_zeros[int(name), :] += sum(overzero_perlayer)
             over_zeros_dict['over_zero'] = over_zeros
-        
-        means = [output[i, start:end, :].half().mean(dim=0).cpu() for i, (start, end) in enumerate(slice_ranges)]
-        avg_output = torch.stack(means, dim=0).cpu() 
-        save_raw_vals_to_dict(name, raw_values_avg_tokens, avg_output)
+        if do_sent_avg:
+            slice_savg = slice_ranges[:num_row_s_avg]
+            means = [output[i, start:end, :].half().mean(dim=0).cpu() for i, (start, end) in enumerate(slice_savg)]
+            avg_output = torch.stack(means, dim=0).cpu() 
+            save_raw_vals_to_dict(name, raw_values_avg_tokens, avg_output)
         
     return hook_fn
 
@@ -123,7 +126,7 @@ def concat_neuron_layers(raw_values_avg_tokens):
 #     return full_raw_values
 
 
-def register_hook(infer_model, handlers, slice_ranges, sequence_lengths, do_overzero=True, num_row_ozs=None): 
+def register_hook(infer_model, handlers, slice_ranges, sequence_lengths, do_overzero=True, num_row_ozs=None, do_sent_avg=True, num_row_s_avg=None): 
     # remove_hooks(handlers)  # Remove any existing hooks before adding new ones
     clean_hooks(infer_model)
     num_layers = infer_model.num_layers
@@ -131,7 +134,7 @@ def register_hook(infer_model, handlers, slice_ranges, sequence_lengths, do_over
     
     for i in range (num_layers):
         mlp = infer_model.model.model.layers[i].mlp
-        handlers.append(mlp.act_fn.register_forward_hook(get_activation_mlp(f"{i}", slice_ranges, sequence_lengths, do_overzero=do_overzero, num_row_ozs=num_row_ozs)))
+        handlers.append(mlp.act_fn.register_forward_hook(get_activation_mlp(f"{i}", slice_ranges, sequence_lengths, do_overzero=do_overzero, num_row_ozs=num_row_ozs, do_sent_avg=do_sent_avg, num_row_s_avg=num_row_s_avg)))
     # print(infer_model.model.model.layers[1].mlp.act_fn._forward_hooks)
 
     # for handler in handlers:
@@ -178,7 +181,7 @@ def get_neurons(
     dataset_name, split, max_instances=None, max_lang=None, selected_langs=None, is_predict=True, apply_template=True,
     debug=False,take_whole=False,
     # neuron retrieval properties
-    max_tokens_overzeros=10000,
+    max_tokens_overzeros=10000, max_sentence_avgs=500,
     # save to kaggle properties
     kaggle_dataname_to_save=None, is_update=False, batch_size=1, 
 
@@ -236,6 +239,8 @@ def get_neurons(
             raise ValueError("Dataset is not available!")
         dataset_name = dataset_instance.dataset_name
         max_instances = max_instances if max_instances else len(ds)
+        do_sent_avg = True
+        do_overzero = True
         for start_idx in tqdm(range(0, max_instances, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
             end_idx = min(start_idx + batch_size, max_instances)
             batch_data = ds.select(range(start_idx, end_idx))
@@ -248,37 +253,43 @@ def get_neurons(
                 id_prompt_start, id_prompt_end, len_sentence, prompt_whole = dataset_instance.get_index_start_end_prompt(
                     infer_model, detail_data, infer_model.model_name, is_predict, take_whole
                 )
+                
+                id_prompt_start = id_prompt_start if apply_template else 2
                 slice_ranges.append((id_prompt_start, id_prompt_end))
                 seq_lengths.append(len_sentence)
                 text = infer_model.get_templated_prompt(prompt_whole, apply_template)
                 texts.append(text)
 
-            # Assume full batch, will trim if needed
-            do_overzero = True
+            
             token_lens = [end - start for (start, end) in slice_ranges]
             accumulated = 0
             cut_index = len(texts)
+            cut_sent_avg = min(end_idx, max_sentence_avgs)
 
             for i, tok_len in enumerate(token_lens):
                 if over_zeros_dict['num'] + accumulated + tok_len > max_tokens_overzeros:
                     cut_index = i
                     break
                 accumulated += tok_len
+             
 
             if cut_index == 0:
                 do_overzero = False
-
+            
             model_inputs, input_lengths, slice_ranges = infer_model.batch_tokenize(texts, slice_ranges)
             clean_hooks(infer_model)
             over_zeros_dict['num'] += accumulated if do_overzero else 0
-            register_hook(infer_model, handlers, slice_ranges, seq_lengths, do_overzero=do_overzero, num_row_ozs=cut_index)
+            register_hook(infer_model, handlers, slice_ranges, seq_lengths, do_overzero=do_overzero, num_row_ozs=cut_index, do_sent_avg=do_sent_avg, num_row_s_avg=cut_sent_avg)
+            if cut_sent_avg <= end_idx:
+                do_sent_avg = False
             generated_texts = infer_model.batch_inference(texts, model_inputs, slice_ranges, max_new_tokens=1, debug=debug)
 
             clean_hooks(infer_model)
             remove_hooks(handlers)
 
             n_instances += len(texts)
-
+            if do_sent_avg == False and do_overzero == False:
+                break
         full_raw_values_avg_tokens = concat_neuron_layers(raw_values_avg_tokens)
         # full_raw_values = merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token)
         full_languages_raw_values = concat_languages(full_languages_raw_values, full_raw_values_avg_tokens)
@@ -329,6 +340,7 @@ a, b, c = get_neurons(
         debug=args.debug,
         take_whole=args.take_whole,
         max_tokens_overzeros=args.max_tokens_overzeros,
+        max_sentence_avgs = args.max_sentence_avgs,
         kaggle_dataname_to_save=args.kaggle_dataname_to_save, 
         is_update=args.is_update,
         batch_size=args.batch_size
