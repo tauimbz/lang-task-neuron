@@ -12,6 +12,7 @@ import subprocess
 from kaggle.api.kaggle_api_extended import KaggleApi
 from kaggle_utils import *
 import argparse
+import pandas as pd
 
 
 def count_map_neurons(tensor):
@@ -108,10 +109,13 @@ def get_k(scores_tensor, k, is_top):
     layer_indices = []
     neuron_indices = []
     
-    scores_flat = scores_tensor.view(n_lang, -1)
-    
+    # scores_flat = scores_tensor.view(n_lang, -1)
+    # print(f"scores_flat.shape: {scores_flat.shape}")
     for lang_idx in range(n_lang):
-        values, indices = torch.topk(scores_flat[lang_idx], k) if is_top else torch.topk(scores_flat[lang_idx], k, largest=False)
+        eps = 1e-8
+        scores_flat = scores_tensor[lang_idx].view(-1).float()
+        scores_flat = scores_flat + (torch.arange(scores_flat.numel(), dtype=torch.float32) * eps)
+        values, indices = torch.topk(scores_flat, k) if is_top else torch.topk(scores_flat, k, largest=False)
         topk_values.append(values)
         topk_indices.append(indices)
     
@@ -134,16 +138,51 @@ def convert_inner_tensor(res, n_lang, n_layer):
         for l in range(n_layer):
             res[lang_id][l] = torch.tensor(sorted(res[lang_id][l]))
 
-def get_top_bottom_k(result, k=1000):
-    scores_tensor = result.clone()
-    n_lang, n_layer, n_neuron = scores_tensor.shape
-    layer_indices, neuron_indices = get_k(scores_tensor, k, True)
-    res = [[[] for _ in range(n_layer)] for _ in range(n_lang)]  
-    add_to_res(res, n_lang, n_layer, layer_indices, neuron_indices)
-    layer_indices, neuron_indices = get_k(scores_tensor, k, False)
-    add_to_res(res, n_lang, n_layer, layer_indices, neuron_indices)
-    convert_inner_tensor(res, n_lang, n_layer)
-    return res
+# def get_top_bottom_k(result, k=1000):
+#     scores_tensor = result.clone()
+#     n_lang, n_layer, n_neuron = scores_tensor.shape
+#     layer_indices, neuron_indices = get_k(scores_tensor, k, True)
+#     res = [[[] for _ in range(n_layer)] for _ in range(n_lang)]  
+#     add_to_res(res, n_lang, n_layer, layer_indices, neuron_indices)
+#     layer_indices, neuron_indices = get_k(scores_tensor, k, False)
+#     add_to_res(res, n_lang, n_layer, layer_indices, neuron_indices)
+#     convert_inner_tensor(res, n_lang, n_layer)
+#     return res
+
+def get_top_bottom(tensor, k=1000):
+    result = tensor.clone().to(dtype=torch.float64)
+    n_lang, n_layer, n_neuron = result.shape
+    lang_idx, layer_idx, neuron_idx = torch.meshgrid(
+    torch.arange(tensor.size(0)),
+    torch.arange(tensor.size(1)),
+    torch.arange(tensor.size(2)),
+    indexing='ij'
+    )
+
+    df = pd.DataFrame({
+        'lang': lang_idx.flatten().numpy(),
+        'layer': layer_idx.flatten().numpy(),
+        'neuron': neuron_idx.flatten().numpy(),
+        'score': tensor.flatten().numpy()
+    })
+    lang_list = sorted(df['lang'].unique())
+    lang_to_id = {lang: i for i, lang in enumerate(lang_list)}
+    tb_df = [[[] for _ in range(n_layer)] for _ in range(n_lang)]
+    for lang in df['lang'].unique():
+        for mode in [True, False]:
+            df_lang = df[df['lang'] == lang]
+            df_lang_sorted = df_lang.sort_values(['score'], ascending=(mode), kind='mergesort').head(k)
+
+            for (l,), group in df_lang_sorted.groupby(['layer']):
+                lang_id = lang_to_id[lang]
+                neurons_sorted = group['neuron'].tolist()
+                tb_df[lang_id][l].extend(neurons_sorted)
+
+    for lang_id in range(n_lang):
+            for l in range(n_layer):
+                tb_df[lang_id][l] = torch.tensor(sorted(tb_df[lang_id][l]))
+    
+    return tb_df
 
 
 
@@ -155,7 +194,6 @@ def get_map_neurons(tensor, raw_tensor, threshold):
         for j in range((tensor.shape[1])):
             per_layer.append(torch.where(tensor[i][j] > threshold)[0])
         map_neurons.append(per_layer)
-    # Copy to avoid modifying original
     clean_langs = map_neurons.copy()
     filter_manual = manual_filter(raw_tensor, clean_langs, num_layer)
     return filter_manual
@@ -211,7 +249,6 @@ def map(
     assert result.numel() != 0, "no result or tensor provided to compute map neurons"
     path_res = f"{parent_dir}res/map/{model_name_inf}_{dataset_name_inf}"
     os.makedirs(path_res, exist_ok=True)
-    torch.save(result, f"{path_res}/result_{model_name_inf}_{dataset_name_inf}.pt")
     
     if threshold: 
         for i in threshold:
@@ -220,8 +257,11 @@ def map(
             torch.save(map_neurons, filename)
             print(f"saving: {filename}")
             # torch.save(map_neurons, f"{model_name_inf}_{dataset_name_inf}/map_{i}_{model_name_inf}_{dataset_name_inf}/.pt")
+    torch.save(result, f"{path_res}/result_{model_name_inf}_{dataset_name_inf}.pt")
     if top_bottom_k:
-        top_bottom = get_top_bottom_k(result, k=1000)
+        print(f"top_bottom_k: {top_bottom_k}")
+        top_bottom = get_top_bottom(result, k=top_bottom_k)
+        print("done doing top bottom")
         filename = f"{path_res}/map_tb{top_bottom_k}_{model_name_inf}_{dataset_name_inf}.pt"
         torch.save(top_bottom, filename)
         print(f"saving: {filename}")
@@ -233,9 +273,9 @@ def map(
 def main():
     parser = argparse.ArgumentParser(description="Run the map function with specified parameters.")
     parser.add_argument("--in_kaggle", action='store_true', help="Whether the file is from Kaggle")
-    parser.add_argument("--dataset_kaggle", type=str, required=True, help="The dataset name in Kaggle, if not Kaggle then empty")
-    parser.add_argument("--filename", type=str, required=True, help="The filename to process")
-    parser.add_argument("--threshold", type=float, nargs="+", required=True, help="List of threshold float values")
+    parser.add_argument("--dataset_kaggle", type=str,  help="The dataset name in Kaggle, if not Kaggle then empty")
+    parser.add_argument("--filename", type=str, help="The filename to process")
+    parser.add_argument("--threshold", type=float, nargs="+",  help="List of threshold float values")
     parser.add_argument("--num_layer", type=int, required=True, help="Number of layers")
     parser.add_argument("--model_name_inf", type=str, required=True, help="Model name")
     parser.add_argument("--dataset_name_inf", type=str, required=True, help="Dataset name")

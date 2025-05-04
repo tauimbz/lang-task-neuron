@@ -7,3 +7,4 @@ pandas
 torch
 tqdm
 accelerate
+pandas
