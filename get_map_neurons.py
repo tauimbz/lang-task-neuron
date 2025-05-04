@@ -99,6 +99,54 @@ def manual_filter(neuron_xwinograd, processed_neurons, num_layer):
     filtered_manual_perlayer = [convert_to_per_layer(filtered_manual[i], num_neurons_perlayer, num_layer) for i in range(len(filtered_manual))]
     return filtered_manual_perlayer
 
+
+
+def get_k(scores_tensor, k, is_top):
+    n_lang, n_layer, n_neuron = scores_tensor.shape
+    topk_values = []
+    topk_indices = []
+    layer_indices = []
+    neuron_indices = []
+    
+    scores_flat = scores_tensor.view(n_lang, -1)
+    
+    for lang_idx in range(n_lang):
+        values, indices = torch.topk(scores_flat[lang_idx], k) if is_top else torch.topk(scores_flat[lang_idx], k, largest=False)
+        topk_values.append(values)
+        topk_indices.append(indices)
+    
+        layers = indices // n_neuron
+        neurons = indices % n_neuron
+        layer_indices.append(layers)
+        neuron_indices.append(neurons)
+    return layer_indices, neuron_indices
+
+def add_to_res(res, n_lang, n_layer, layer_indices, neuron_indices):
+    for lang_id in range(n_lang):
+        layer_idx = layer_indices[lang_id]       
+        neuron_idx = neuron_indices[lang_id]     
+    
+        for l, n in zip(layer_idx.tolist(), neuron_idx.tolist()):
+            res[lang_id][l].append(n)
+            
+def convert_inner_tensor(res, n_lang, n_layer):
+    for lang_id in range(n_lang):
+        for l in range(n_layer):
+            res[lang_id][l] = torch.tensor(sorted(res[lang_id][l]))
+
+def get_top_bottom_k(result, k=1000):
+    scores_tensor = result.clone()
+    n_lang, n_layer, n_neuron = scores_tensor.shape
+    layer_indices, neuron_indices = get_k(scores_tensor, k, True)
+    res = [[[] for _ in range(n_layer)] for _ in range(n_lang)]  # 6 langs × 24 layers
+    add_to_res(res, n_lang, n_layer, layer_indices, neuron_indices)
+    layer_indices, neuron_indices = get_k(scores_tensor, k, False)
+    add_to_res(res, n_lang, n_layer, layer_indices, neuron_indices)
+    convert_inner_tensor(res, n_lang, n_layer)
+    return res
+
+
+
 def get_map_neurons(tensor, raw_tensor, threshold):
     map_neurons = []
     num_layer = tensor.shape[1]
@@ -114,43 +162,66 @@ def get_map_neurons(tensor, raw_tensor, threshold):
  
 
 def map(
-    in_kaggle: bool,
-    dataset_kaggle:str,
-    filename: str, 
-    threshold: List[float],
-    num_layer: int,
-    model_name_inf: str,
-    dataset_name_inf: str,
+    in_kaggle: bool = None,
+    dataset_kaggle: str = None,
+    filename: str = None, 
+    threshold: List[float] = None,
+    num_layer: int = 24,
+    model_name_inf: str = "Qwen",
+    dataset_name_inf: str = "Flores",
     is_last_token: bool = False,
     max_instances: int = None,
+    top_bottom_k: int = None,
     kaggle_dataname_to_save: str =None,
     is_update: bool = None, # is update for kaggle dataset
-    parent_dir: str = None
+    parent_dir: str = None,
+    result_exist: bool = None,
+    in_kaggle_result: str = None,
+    res_filename: str = None, # if results already exists and want to compute map threshold or top/bottomk
 ):
 
     """
     filename: filename of neuron values from kaggle. tensor is in the shape (num lang, avg/last, num_data, num_total_neurons)
     threshold: from 0.0 to 1.0, threshold for the map 
     is_last_token: using last token aggregation. default is False and use avg aggregation
+    result_exist:  bool if results already exists, will prioritize this if even the tensor raw file is also provided (filename)
     """
-    tensor = torch.tensor([])
-    if in_kaggle:
-        download_from_kaggle(dataset_kaggle, filename)
-        tensor = torch.load(f"data/{filename}", weights_only=True)
-    else: tensor = torch.load(filename, weights_only=True)
-    tensor = tensor[:,:max_instances,:] if max_instances else tensor
-    print(tensor.shape)
-    tensor_per_layer = tensor.reshape(tensor.shape[0], tensor.shape[1],num_layer, int(tensor.shape[2]/num_layer))
-    result = count_map_neurons(tensor_per_layer)
+    
+    result = torch.tensor([])
+
+    if result_exist:
+        if in_kaggle_result:
+            download_from_kaggle(dataset_kaggle, res_filename)
+            result = torch.load(f"data/{res_filename}", weights_only=True)
+        else: result = torch.load(res_filename, weights_only=True)
+    else:
+        tensor = torch.tensor([])
+        if in_kaggle:
+            download_from_kaggle(dataset_kaggle, filename)
+            tensor = torch.load(f"data/{filename}", weights_only=True)
+        else: tensor = torch.load(filename, weights_only=True)
+        tensor = tensor[:,:max_instances,:] if max_instances else tensor
+        print(tensor.shape)
+        tensor_per_layer = tensor.reshape(tensor.shape[0], tensor.shape[1],num_layer, int(tensor.shape[2]/num_layer))
+        result = count_map_neurons(tensor_per_layer)
+    assert result.numel() != 0, "no result or tensor provided to compute map neurons"
     path_res = f"{parent_dir}res/map/{model_name_inf}_{dataset_name_inf}"
     os.makedirs(path_res, exist_ok=True)
     torch.save(result, f"{path_res}/result_{model_name_inf}_{dataset_name_inf}.pt")
-    threshold = threshold if threshold else [0.99, 0.90, 0.8, 0.3, 0.1]
-    for i in threshold:
-        map_neurons = get_map_neurons(result, tensor, i)
-        filename = f"{path_res}/map_{i}_{model_name_inf}_{dataset_name_inf}.pt"
-        torch.save(map_neurons, filename)
-        # torch.save(map_neurons, f"{model_name_inf}_{dataset_name_inf}/map_{i}_{model_name_inf}_{dataset_name_inf}/.pt")
+    
+    if threshold: 
+        for i in threshold:
+            map_neurons = get_map_neurons(result, tensor, i)
+            filename = f"{path_res}/map_{i}_{model_name_inf}_{dataset_name_inf}.pt"
+            torch.save(map_neurons, filename)
+            print(f"saving: {filename}")
+            # torch.save(map_neurons, f"{model_name_inf}_{dataset_name_inf}/map_{i}_{model_name_inf}_{dataset_name_inf}/.pt")
+    if top_bottom_k:
+        top_bottom = get_top_bottom_k(result, k=1000)
+        filename = f"{path_res}/map_tb{top_bottom_k}_{model_name_inf}_{dataset_name_inf}.pt"
+        torch.save(top_bottom, filename)
+        print(f"saving: {filename}")
+
         
     if kaggle_dataname_to_save:
         save_to_kaggle(dataset_name=kaggle_dataname_to_save, data_dir=path_res, is_update=is_update)
@@ -166,9 +237,13 @@ def main():
     parser.add_argument("--dataset_name_inf", type=str, required=True, help="Dataset name")
     parser.add_argument("--is_last_token", action='store_true', help="Set if last token")
     parser.add_argument("--max_instances", type=int, default=None, help="Maximum instances")
+    parser.add_argument("--top_bottom_k", type=int, default=None, help="top bottom k")
     parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
     parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
     parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
+    parser.add_argument("--result_exist", type=bool, default=False, help="If map result already exist and wants to compute threshold/bottomtopk")
+    parser.add_argument("--in_kaggle_result", type=str, default=None, help="Flag if result_exist nd is in Kaggle dataset")
+    parser.add_argument("--res_filename", type=str, default=None, help="Directory for saving results")
 
     args = parser.parse_args()
     parent_dir = args.parent_dir_to_save if args.parent_dir_to_save else ""
@@ -188,9 +263,13 @@ def main():
         dataset_name_inf=args.dataset_name_inf,
         is_last_token=args.is_last_token,
         max_instances=args.max_instances,
+        top_bottom_k = args.top_bottom_k,
         kaggle_dataname_to_save=args.kaggle_dataname_to_save,
         is_update=args.is_update,
-        parent_dir=parent_dir
+        parent_dir=parent_dir,
+        result_exist=args.result_exist,
+        in_kaggle_result=args.in_kaggle_result,
+        res_filename=args.res_filename
     )
 
 
