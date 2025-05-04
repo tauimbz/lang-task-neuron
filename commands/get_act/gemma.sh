@@ -3,12 +3,14 @@ python get_activations.py  \
     --model "google/gemma-2-9b-it"\
     --dataset_name "Muennighoff/flores200" \
     --split "dev" \
-    --max_instances 1000 \
-    --apply_template \
-    --max_tokens_overzeros 100000\
-    --kaggle_dataname_to_save "act-gemma9-neurons" \
-    --selected_langs "deu_Latn" "eng_Latn" "fra_Latn" "ind_Latn" "jpn_Jpan" "kor_Hang" "zsm_Latn" "nld_Latn" "por_Latn" "rus_Cyrl" "vie_Latn" "zho_Hans"\
-    --parent_dir_to_save "/workspace/"
+    --max_tokens_overzeros 100000 \
+    --max_sentence_avgs 500\
+    --selected_langs "eng_Latn" "nld_Latn" "ind_Latn" "zsm_Latn" "vie_Latn" "jpn_Jpan" "zho_Hans"\
+    --batch_size 32 \
+    --kaggle_dataname_to_save "act-gemma9-flores" \
+    --parent_dir_to_save "/workspace/" \
+    
+    # --max_instances 200 \
     # --is_update \
     # --debug \
     # --take_whole \
