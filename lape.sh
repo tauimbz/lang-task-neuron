@@ -1,11 +1,61 @@
 python lape.py  \
     --in_kaggle \
-    --dataset_kaggle "inayarahmanisa/test-act-qwen05-neurons"\
-    --filename "oz_flores200_200_False" \
+    --dataset_kaggle "inayarahmanisa/act-qwen7-flores"\
+    --filename "oz_flores200_997_False" \
+    --model_name_inf "Qwen7B" \
+    --dataset_name_inf "flores" \
+    --kaggle_dataname_to_save "lape-qwen7-flores" \
+
+
+python lape.py  \
+    --in_kaggle \
+    --dataset_kaggle "inayarahmanisa/act-qwen05-flores"\
+    --filename "oz_flores200_997_False" \
     --model_name_inf "Qwen05B" \
     --dataset_name_inf "flores" \
-    --kaggle_dataname_to_save "test-lape" \
-    # --is_update 
+    --kaggle_dataname_to_save "lape-qwen05-flores" \
+
+python lape.py  \
+    --in_kaggle \
+    --dataset_kaggle "inayarahmanisa/act-gemma2-flores"\
+    --filename "oz_flores200_997_False" \
+    --model_name_inf "gemma2" \
+    --dataset_name_inf "flores" \
+    --kaggle_dataname_to_save "lape-gemma2-flores" \
+
+python lape.py  \
+    --in_kaggle \
+    --dataset_kaggle "inayarahmanisa/act-sea1-5-flores"\
+    --filename "oz_flores200_997_False" \
+    --model_name_inf "sea1-5" \
+    --dataset_name_inf "flores" \
+    --kaggle_dataname_to_save "lape-sea1-5-flores" \
+
+
+# python lape.py  \
+#     --in_kaggle \
+#     --dataset_kaggle "inayarahmanisa/act-sea1-5-flores"\
+#     --filename "oz_flores200_997_False" \
+#     --model_name_inf "sea1-5" \
+#     --dataset_name_inf "flores" \
+#     --kaggle_dataname_to_save "lape-sea1-5-flores" \
+#     # --parent_dir_to_save "/workspace/"\
+#     # --is_update 
+
+
+
+
+
+
+# python lape.py  \
+#     --in_kaggle \
+#     --dataset_kaggle "inayarahmanisa/test-act-qwen05-neurons"\
+#     --filename "oz_flores200_200_False" \
+#     --model_name_inf "Qwen05B" \
+#     --dataset_name_inf "flores" \
+#     --kaggle_dataname_to_save "test-lape" \
+#     # --parent_dir_to_save "/workspace/"\
+#     # --is_update 
     
 # python lape.py  \
 #     --in_kaggle \

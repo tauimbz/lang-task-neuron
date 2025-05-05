@@ -43,7 +43,8 @@ def save_to_kaggle(
     data_dir:str = None,
     result_neurons: Optional[Union[torch.Tensor, List[torch.Tensor]]] = None,
     filename: Optional[Union[str, List[str]]] = None,
-    is_update:bool =False
+    is_update:bool =False,
+    subdir_name:str = None
 ):
     
     os.environ['KAGGLE_USERNAME'] = kaggle_api_token['username']
@@ -51,7 +52,7 @@ def save_to_kaggle(
 
     api = KaggleApi()
     api.authenticate()
-
+    subdir_name = subdir_name if subdir_name else ""
     target_dir = "kaggle/output"
     
     if os.path.exists(target_dir):
@@ -73,19 +74,21 @@ def save_to_kaggle(
     metadata_path = os.path.join(base_dir, 'dataset-metadata.json')
     with open(metadata_path, 'w') as f:
         json.dump(meta, f)
+    
+    sub_dir = os.path.join(base_dir, subdir_name)
+    os.makedirs(base_dir, exist_ok=True)
     if data_dir:
-        shutil.copytree(data_dir, base_dir, dirs_exist_ok=True)
+        shutil.copytree(data_dir, sub_dir, dirs_exist_ok=True)
     elif result_neurons:
-        print("hey")
         if isinstance(result_neurons, torch.Tensor):
             assert isinstance(filename, str), "there must be the same number of filename and rensult neurons"
-            torch.save(result_neurons, os.path.join(base_dir, filename))
+            torch.save(result_neurons, os.path.join(sub_dir, filename))
             
-            # Process single tensor
+            # single tensor
         elif isinstance(result_neurons, list):
             assert len(result_neurons) == len(filename), "there must be the same number of filename and rensult neurons"
             for i in range (len(result_neurons)):
-                torch.save(result_neurons[i], os.path.join(base_dir, filename[i]))
+                torch.save(result_neurons[i], os.path.join(sub_dir, filename[i]))
                 
 
     print("Files in the target directory:")
@@ -104,7 +107,7 @@ def save_to_kaggle(
             print("Files in directory before creating:")
             for f in os.listdir(base_dir):
                 print("-", f)
-            subprocess.run(["kaggle", "datasets", "version", "-p", base_dir, "-m", "Updating dataset"])
+            subprocess.run(["kaggle", "datasets", "version", "-p", base_dir,  "--dir-mode", "zip",  "-m", "Updating dataset"])
 
         else:
             print(f"Dataset {dataset_name} does not exist. Creating a new one...")

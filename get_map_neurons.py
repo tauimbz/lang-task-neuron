@@ -49,10 +49,10 @@ def count_map_neurons(tensor):
 
 
 def convert_processed_neurons_to_tensor(num_lang, num_layer, num_neurons_perlayer, processed_neurons):
-    # Preallocate output tensor (all zeros)
+    
     out = torch.zeros((num_lang, num_layer, num_neurons_perlayer), dtype=torch.float32)
     
-    # Fill it with 1s at the appropriate indices
+    # fill it with 1s at the appropriate indices
     for i in range(num_lang):
         for j in range(num_layer):
             indices = processed_neurons[i][j]
@@ -61,18 +61,14 @@ def convert_processed_neurons_to_tensor(num_lang, num_layer, num_neurons_perlaye
     return out
 
 def convert_to_per_layer(all_layer_one_lang, num_per_layer, num_layer):
-    # # Number of bins
-    # num_bins = 24
-    # bin_size = 4864
     
-    # Prepare list to hold remapped tensors
     bins = []
     for i in range(num_layer):
         lower = i * num_per_layer
         upper = (i + 1) * num_per_layer
         # print(f"lower: {lower}, upper: {upper}")
         
-        # Get values in this bin
+        
         mask = (all_layer_one_lang >= lower) & (all_layer_one_lang < upper)
         selected = all_layer_one_lang[mask] - lower  # remap to 0–4863
         bins.append(selected)
@@ -86,7 +82,7 @@ def manual_filter(neuron_xwinograd, processed_neurons, num_layer):
     reshaped_proc_tensor = js_neurons_tensor.reshape(num_lang, num_neurons)
     per_lang_mask = reshaped_proc_tensor > 0
     all_neurons = [torch.where(per_lang_mask[i])[0] for i in range(reshaped_proc_tensor.shape[0])]
-    # all_neurons
+    
     for i in range(len(all_neurons)):
         neurons_i = set(all_neurons[i].numpy())
         for j in range(len(all_neurons)):
@@ -216,6 +212,7 @@ def map(
     result_exist: bool = False,
     data_kaggle_result: str = None,
     res_filename: str = None, # if results already exists and want to compute map threshold or top/bottomk
+    subdir_name: str = "map"
 ):
 
     """
@@ -268,7 +265,7 @@ def map(
 
         
     if kaggle_dataname_to_save:
-        save_to_kaggle(dataset_name=kaggle_dataname_to_save, data_dir=path_res, is_update=is_update)
+        save_to_kaggle(dataset_name=kaggle_dataname_to_save, data_dir=path_res, is_update=is_update, subdir_name=subdir_name)
 
 def main():
     parser = argparse.ArgumentParser(description="Run the map function with specified parameters.")
@@ -288,6 +285,8 @@ def main():
     parser.add_argument("--result_exist", action='store_true', help="If map result already exist and wants to compute threshold/bottomtopk")
     parser.add_argument("--data_kaggle_result", type=str, default=None, help="dataset name if result_exist nd is in Kaggle dataset")
     parser.add_argument("--res_filename", type=str, default=None, help="filename that saves results")
+    parser.add_argument("--subdir_name", type=str, default=None, help="subdir name to save final result")
+
 
     args = parser.parse_args()
     parent_dir = args.parent_dir_to_save if args.parent_dir_to_save else ""
@@ -313,7 +312,8 @@ def main():
         parent_dir=parent_dir,
         result_exist=args.result_exist,
         data_kaggle_result=args.data_kaggle_result,
-        res_filename=args.res_filename
+        res_filename=args.res_filename,
+        subdir_name=args.subdir_name
     )
 
 
