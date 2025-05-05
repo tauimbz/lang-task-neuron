@@ -9,11 +9,5 @@ python get_activations.py  \
     --batch_size 32 \
     --kaggle_dataname_to_save "act-gemma9-flores" \
     --parent_dir_to_save "/workspace/" \
+    > /workspace/res/log_gemma9.txt 2>&1
     
-    # --max_instances 200 \
-    # --is_update \
-    # --debug \
-    # --take_whole \
-    # --max_lang \
-    # --selected_langs "deu_Latn" "eng_Latn" "fra_Latn" "ind_Latn" "jpn_Jpan" "kor_Hang" "zsm_Latn" "nld_Latn" "por_Latn" "rus_Cyrl" "vie_Latn" "zho_Hans"\
-    # --is_predict \

@@ -9,7 +9,7 @@ python get_map_neurons.py  \
     --threshold 0.99 0.95 0.90 0.8 0.7 0.6 0.5 0.3 \
     --top_bottom_k 1000 \
     --is_update \
-    --subdir_name "map" \
+    --subdir_name "map" 
 
 python get_map_neurons.py  \
     --in_kaggle \
@@ -22,7 +22,7 @@ python get_map_neurons.py  \
     --threshold 0.99 0.95 0.90 0.8 0.7 0.6 0.5 0.3 \
     --top_bottom_k 1000 \
     --is_update \
-    --subdir_name "map" \
+    --subdir_name "map" 
     
 python get_map_neurons.py  \
     --in_kaggle \
@@ -35,7 +35,7 @@ python get_map_neurons.py  \
     --threshold 0.99 0.95 0.90 0.8 0.7 0.6 0.5 0.3 \
     --top_bottom_k 1000 \
     --is_update \
-    --subdir_name "map" \
+    --subdir_name "map" 
 
 
 
@@ -50,7 +50,7 @@ python get_map_neurons.py  \
     --threshold 0.99 0.95 0.90 0.8 0.7 0.6 0.5 0.3 \
     --top_bottom_k 1000 \
     --is_update \
-    --subdir_name "map" \
+    --subdir_name "map" 
 
 
 python get_map_neurons.py  \
@@ -64,7 +64,7 @@ python get_map_neurons.py  \
     --threshold 0.99 0.95 0.90 0.8 0.7 0.6 0.5 0.3 \
     --top_bottom_k 1000 \
     --is_update \
-    --subdir_name "map" \
+    --subdir_name "map" 
 
 python get_map_neurons.py  \
     --in_kaggle \
@@ -77,7 +77,7 @@ python get_map_neurons.py  \
     --threshold 0.99 0.95 0.90 0.8 0.7 0.6 0.5 0.3 \
     --top_bottom_k 1000 \
     --is_update \
-    --subdir_name "map" \
+    --subdir_name "map" 
 
 
 

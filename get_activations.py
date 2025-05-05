@@ -187,6 +187,7 @@ def get_neurons(
 
 ):
     infer_model.model.eval()
+    print(f"num layers: {infer_model.num_layers}")
     """
     infer_model: HF model InferenceModel
     dataset_name: dataset name from HF
