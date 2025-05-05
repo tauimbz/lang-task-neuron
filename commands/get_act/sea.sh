@@ -9,4 +9,4 @@ python get_activations.py  \
     --batch_size 32 \
     --kaggle_dataname_to_save "act-sea7-flores" \
     --parent_dir_to_save "/workspace/" \
-    > /workspace/res/log_sea7.txt 2>&1
+    > /workspace/log_sea7.txt 2>&1

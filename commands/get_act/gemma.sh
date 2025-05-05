@@ -1,4 +1,4 @@
-python get_activations.py  \
+python3 get_activations.py  \
     --hf_logintoken "***REMOVED***" \
     --model "google/gemma-2-9b-it"\
     --dataset_name "Muennighoff/flores200" \
@@ -9,5 +9,5 @@ python get_activations.py  \
     --batch_size 32 \
     --kaggle_dataname_to_save "act-gemma9-flores" \
     --parent_dir_to_save "/workspace/" \
-    > /workspace/res/log_gemma9.txt 2>&1
+    > /workspace/log_gemma9.txt 2>&1
     

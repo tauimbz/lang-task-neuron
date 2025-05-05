@@ -43,7 +43,7 @@ python get_map_neurons.py  \
     --in_kaggle \
     --dataset_kaggle "inayarahmanisa/act-sea1-5-flores"\
     --filename "act_flores200_997_False.pt" \
-    --num_layer 29 \
+    --num_layer 28 \
     --model_name_inf "sea1-5" \
     --dataset_name_inf "flores" \
     --kaggle_dataname_to_save "lape-sea1-5-flores" \
@@ -57,7 +57,7 @@ python get_map_neurons.py  \
     --in_kaggle \
     --dataset_kaggle "inayarahmanisa/act-sea7-flores"\
     --filename "act_flores200_997_False.pt" \
-    --num_layer 29 \
+    --num_layer 28 \
     --model_name_inf "sea7" \
     --dataset_name_inf "flores" \
     --kaggle_dataname_to_save "lape-sea7-flores" \
@@ -70,7 +70,7 @@ python get_map_neurons.py  \
     --in_kaggle \
     --dataset_kaggle "inayarahmanisa/act-gemma9-flores"\
     --filename "act_flores200_997_False.pt" \
-    --num_layer 26 \
+    --num_layer 42 \
     --model_name_inf "gemma9" \
     --dataset_name_inf "flores" \
     --kaggle_dataname_to_save "lape-gemma9-flores" \

@@ -1,6 +1,6 @@
 python get_activations.py  \
     --hf_logintoken "***REMOVED***" \
-    --model "Qwen/Qwen2.5-0.5B-Instruct"\
+    --model "Qwen/Qwen2.5-0.5B-Instruct" \
     --dataset_name "Muennighoff/flores200" \
     --split "devtest" \
     --max_instances 2 \
