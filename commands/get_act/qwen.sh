@@ -1,4 +1,4 @@
-python get_activations.py  \
+python3 get_activations.py  \
     --hf_logintoken "***REMOVED***" \
     --model "Qwen/Qwen2.5-7B-Instruct"\
     --dataset_name "Muennighoff/flores200" \
@@ -7,9 +7,9 @@ python get_activations.py  \
     --max_sentence_avgs 500\
     --selected_langs "eng_Latn" "nld_Latn" "ind_Latn" "zsm_Latn" "vie_Latn" "jpn_Jpan" "zho_Hans"\
     --batch_size 32 \
-    --kaggle_dataname_to_save "act-qwen7-flores" \
-    --parent_dir_to_save "/workspace/" \
-
+    --kaggle_dataname_to_save "activation-qwen7-flores" \
+    --parent_dir_to_save "workspace/" \
+    > workspace/log_gemma9.txt 2>&1
     # --max_instances 200 \
     # --is_update \
     # --debug \

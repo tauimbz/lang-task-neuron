@@ -1,4 +1,4 @@
-python get_activations.py  \
+python3 get_activations.py  \
     --hf_logintoken "***REMOVED***" \
     --model "SeaLLMs/SeaLLMs-v3-7B-Chat"\
     --dataset_name "Muennighoff/flores200" \
@@ -7,6 +7,6 @@ python get_activations.py  \
     --max_sentence_avgs 500\
     --selected_langs "eng_Latn" "nld_Latn" "ind_Latn" "zsm_Latn" "vie_Latn" "jpn_Jpan" "zho_Hans"\
     --batch_size 32 \
-    --kaggle_dataname_to_save "act-sea7-flores" \
-    --parent_dir_to_save "/workspace/" \
-    > /workspace/log_sea7.txt 2>&1
+    --kaggle_dataname_to_save "activation-sea7-flores" \
+    --parent_dir_to_save "workspace/" \
+    > workspace/log_sea7.txt 2>&1
