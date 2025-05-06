@@ -1,6 +1,6 @@
 python lape.py  \
     --in_kaggle \
-    --dataset_kaggle "inayarahmanisa/act-qwen7-flores"\
+    --dataset_kaggle "inayarahmanisa/activation-qwen7-flores"\
     --filename "oz_flores200_997_False" \
     --model_name_inf "Qwen7B" \
     --dataset_name_inf "flores" \
@@ -9,7 +9,7 @@ python lape.py  \
 
 python lape.py  \
     --in_kaggle \
-    --dataset_kaggle "inayarahmanisa/act-qwen05-flores"\
+    --dataset_kaggle "inayarahmanisa/activation-qwen05-flores"\
     --filename "oz_flores200_997_False" \
     --model_name_inf "Qwen05B" \
     --dataset_name_inf "flores" \
@@ -17,7 +17,7 @@ python lape.py  \
 
 python lape.py  \
     --in_kaggle \
-    --dataset_kaggle "inayarahmanisa/act-gemma2-flores"\
+    --dataset_kaggle "inayarahmanisa/activation-gemma2-flores"\
     --filename "oz_flores200_997_False" \
     --model_name_inf "gemma2" \
     --dataset_name_inf "flores" \
@@ -25,7 +25,7 @@ python lape.py  \
 
 python lape.py  \
     --in_kaggle \
-    --dataset_kaggle "inayarahmanisa/act-sea1-5-flores"\
+    --dataset_kaggle "inayarahmanisa/activation-sea1-5-flores"\
     --filename "oz_flores200_997_False" \
     --model_name_inf "sea1-5" \
     --dataset_name_inf "flores" \
@@ -34,7 +34,7 @@ python lape.py  \
 
 # python lape.py  \
 #     --in_kaggle \
-#     --dataset_kaggle "inayarahmanisa/act-sea1-5-flores"\
+#     --dataset_kaggle "inayarahmanisa/activation-sea1-5-flores"\
 #     --filename "oz_flores200_997_False" \
 #     --model_name_inf "sea1-5" \
 #     --dataset_name_inf "flores" \
@@ -49,7 +49,7 @@ python lape.py  \
 
 # python lape.py  \
 #     --in_kaggle \
-#     --dataset_kaggle "inayarahmanisa/test-act-qwen05-neurons"\
+#     --dataset_kaggle "inayarahmanisa/test-activation-qwen05-neurons"\
 #     --filename "oz_flores200_200_False" \
 #     --model_name_inf "Qwen05B" \
 #     --dataset_name_inf "flores" \

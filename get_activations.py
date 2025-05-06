@@ -269,7 +269,7 @@ def get_neurons(
             token_lens = [end - start for (start, end) in slice_ranges]
             accumulated = 0
             cut_index = len(texts)
-            limit_sent_idx = max_sentence_avgs - start_idx
+            limit_sent_idx = max(0, max_sentence_avgs - start_idx)
             cut_sent_avg = min(len(texts), limit_sent_idx)
             do_sent_avg = cut_sent_avg > 0
             print(f"cut_sent_avg: {cut_sent_avg}, end_idx: {end_idx}, max_sentence_avgs: {max_sentence_avgs}")
@@ -329,7 +329,7 @@ def get_neurons(
     # del full_raw_values 
 
     
-    
+    print(f"FINAL full_languages_raw_values.shape: {full_languages_raw_values.shape}")
     torch.save(full_languages_raw_values, f"{path_res}/act_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}.pt")
     torch.save(all_languages_over_zero, f"{path_res}/oz_{dataset_name.split('/')[-1]}_{max_instances}_{is_predict}")
     torch.save(language_dict, f"{path_res}/ld_{dataset_name.split('/')[-1]}")

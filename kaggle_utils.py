@@ -72,6 +72,11 @@ def save_to_kaggle(
     }
 
     metadata_path = os.path.join(base_dir, 'dataset-metadata.json')
+    
+    if is_update:
+        download_dir = Path("kaggle/output/result").resolve()
+        dataset_ref = f"{kaggle_api_token['username']}/{dataset_name}"
+        api.dataset_download_files(dataset_ref, path=download_dir, unzip=True)
     with open(metadata_path, 'w') as f:
         json.dump(meta, f)
     
@@ -103,7 +108,6 @@ def save_to_kaggle(
         if is_update:
             print(f"Dataset {dataset_name} exists. Updating...")
             print(f"dataset_ref: {dataset_ref}")
-            api.dataset_download_files(dataset_ref, path=base_dir, unzip=True)
             print("Files in directory before creating:")
             for f in os.listdir(base_dir):
                 print("-", f)
@@ -122,11 +126,16 @@ def save_to_kaggle(
         print(f"Error while checking or creating dataset: {e}")
 
     shutil.rmtree(target_dir)
+
+
+# b = torch.randn(2, 3, 116746)
 # c = torch.randn(1,2,3,4)
+# path_res = f"res"
+# torch.save(b, f"{path_res}/test.pt")
+
 # save_to_kaggle(
-#     result_neurons = [c, c],
+#     data_dir=path_res,
 #     dataset_name= "testssssss",
-#     filename= ["test.pt", "test2.pt"],
 #     is_update=True
 # )
 
