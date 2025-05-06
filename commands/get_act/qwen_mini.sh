@@ -1,10 +1,10 @@
-!python get_activations.py  \
+python get_activations.py  \
     --hf_logintoken "***REMOVED***" \
     --model "Qwen/Qwen2.5-0.5B-Instruct"\
     --dataset_name "Muennighoff/flores200" \
     --split "dev" \
     --apply_template \
-    --max_tokens_overzeros 30000 \
+    --max_tokens_overzeros 100000 \
     --selected_langs "deu_Latn" "eng_Latn" "fra_Latn" "ind_Latn" "jpn_Jpan" "kor_Hang" "zsm_Latn" "nld_Latn" "por_Latn" "rus_Cyrl" "vie_Latn" "zho_Hans"\
     --max_instances 2 \
     --batch_size 64 \

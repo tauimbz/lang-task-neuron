@@ -44,13 +44,12 @@ args = parser.parse_args()
 # args.model = "Qwen/Qwen2.5-0.5B-Instruct"
 # args.hf_logintoken = "***REMOVED***"
 # args.dataset_name = "Muennighoff/flores200"
-# args.split = "devtest"
-# args.apply_template = True
-# args.max_tokens_overzeros = 113
+# args.split = "dev"
+# args.max_tokens_overzeros = 100000
 # args.selected_langs = [
 #     "deu_Latn", "eng_Latn"]
-# args.max_instances = None
-# args.max_sentence_avgs = 2
+# args.max_instances = 500
+# args.max_sentence_avgs = 500
 # args.batch_size = 32
 # args.debug = True
 
@@ -72,6 +71,7 @@ over_zeros_dict = {"lang":0,"num" : 0, "over_zero" : torch.tensor([])}
 
 
 def save_raw_vals_to_dict(name, dictname, savees):
+    # print(f"dictname.keys: {list(raw_values_avg_tokens.keys())}")
     if not name in dictname:
         dictname[name] = savees
     else:
@@ -106,6 +106,8 @@ def get_activation_mlp(name, slice_ranges, sequence_lengths, max_tokens_overzero
             means = [output[i, start:end, :].half().mean(dim=0).cpu() for i, (start, end) in enumerate(slice_savg)]
             avg_output = torch.stack(means, dim=0).cpu() 
             save_raw_vals_to_dict(name, raw_values_avg_tokens, avg_output)
+            # print(f"kalo avg_output: {avg_output.shape}")
+            # print(f"kalo raw_values_avg_tokens.shape: {raw_values_avg_tokens['0'].shape}")
         
     return hook_fn
 
@@ -127,7 +129,7 @@ def concat_neuron_layers(raw_values_avg_tokens):
 
 
 def register_hook(infer_model, handlers, slice_ranges, sequence_lengths, do_overzero=True, num_row_ozs=None, do_sent_avg=True, num_row_s_avg=None): 
-    # remove_hooks(handlers)  # Remove any existing hooks before adding new ones
+    # remove_hooks(handlers)  
     clean_hooks(infer_model)
     num_layers = infer_model.num_layers
     remove_hooks(handlers)
@@ -198,7 +200,7 @@ def get_neurons(
     """
     # infer_model = InferenceModel(model_name)
     global over_zeros_dict, over_zeros, raw_values_avg_tokens
-    raw_values_avg_tokens = {}
+    # raw_values_avg_tokens = {}
     # raw_values_last_token = {}
     full_raw_values_avg_tokens = []
     # full_raw_values_last_token = []
@@ -242,6 +244,7 @@ def get_neurons(
         max_instances = max_instances if max_instances else len(ds)
         do_sent_avg = True
         do_overzero = True
+        end_idx = 0
         for start_idx in tqdm(range(0, max_instances, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
             end_idx = min(start_idx + batch_size, max_instances)
             batch_data = ds.select(range(start_idx, end_idx))
@@ -249,6 +252,7 @@ def get_neurons(
             texts = []
             slice_ranges = []
             seq_lengths = []
+            print(f"processing data {start_idx} to {end_idx}")
             for data in batch_data:
                 detail_data = dataset_instance.get_detail_inference(data)
                 id_prompt_start, id_prompt_end, len_sentence, prompt_whole = dataset_instance.get_index_start_end_prompt(
@@ -265,8 +269,10 @@ def get_neurons(
             token_lens = [end - start for (start, end) in slice_ranges]
             accumulated = 0
             cut_index = len(texts)
-            cut_sent_avg = min(end_idx, max_sentence_avgs)
-
+            limit_sent_idx = max_sentence_avgs - start_idx
+            cut_sent_avg = min(len(texts), limit_sent_idx)
+            do_sent_avg = cut_sent_avg > 0
+            print(f"cut_sent_avg: {cut_sent_avg}, end_idx: {end_idx}, max_sentence_avgs: {max_sentence_avgs}")
             for i, tok_len in enumerate(token_lens):
                 if over_zeros_dict['num'] + accumulated + tok_len > max_tokens_overzeros:
                     cut_index = i
@@ -274,15 +280,16 @@ def get_neurons(
                 accumulated += tok_len
              
 
-            if cut_index == 0:
+            if cut_index <= 0:
                 do_overzero = False
             
             model_inputs, input_lengths, slice_ranges = infer_model.batch_tokenize(texts, slice_ranges)
             clean_hooks(infer_model)
             over_zeros_dict['num'] += accumulated if do_overzero else 0
+            print(f"do_sent_avg: {do_sent_avg}")
+            print(f"do_overzero: {do_overzero}")
+            
             register_hook(infer_model, handlers, slice_ranges, seq_lengths, do_overzero=do_overzero, num_row_ozs=cut_index, do_sent_avg=do_sent_avg, num_row_s_avg=cut_sent_avg)
-            if cut_sent_avg <= end_idx:
-                do_sent_avg = False
             generated_texts = infer_model.batch_inference(texts, model_inputs, slice_ranges, max_new_tokens=1, debug=debug)
 
             clean_hooks(infer_model)
@@ -290,8 +297,12 @@ def get_neurons(
 
             n_instances += len(texts)
             if do_sent_avg == False and do_overzero == False:
+                print("stopping because of stopping criteria.")
                 break
+            print(f"raw_values_avg_tokens.shape: {raw_values_avg_tokens['0'].shape}")
+        print(f"stop at {end_idx} sentences.")
         full_raw_values_avg_tokens = concat_neuron_layers(raw_values_avg_tokens)
+        
         # full_raw_values = merge_avg_last(full_raw_values_avg_tokens, full_raw_values_last_token)
         full_languages_raw_values = concat_languages(full_languages_raw_values, full_raw_values_avg_tokens)
         print(f"full_languages_raw_values.shape: {full_languages_raw_values.shape}")

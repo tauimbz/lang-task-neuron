@@ -6,7 +6,7 @@ python3 get_activations.py  \
     --max_tokens_overzeros 100000 \
     --max_sentence_avgs 500\
     --selected_langs "eng_Latn" "nld_Latn" "ind_Latn" "zsm_Latn" "vie_Latn" "jpn_Jpan" "zho_Hans"\
-    --batch_size 32 \
+    --batch_size 16 \
     --kaggle_dataname_to_save "act-gemma9-flores" \
     --parent_dir_to_save "/workspace/" \
     > /workspace/log_gemma9.txt 2>&1
