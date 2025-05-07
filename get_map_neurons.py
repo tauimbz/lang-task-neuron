@@ -214,7 +214,7 @@ def map(
     result_exist: bool = False,
     data_kaggle_result: str = None,
     res_filename: str = None, # if results already exists and want to compute map threshold or top/bottomk
-    subdir_name: str = "map"
+    subdir_name: str = ""
 ):
 
     """
