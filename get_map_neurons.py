@@ -145,7 +145,7 @@ def convert_inner_tensor(res, n_lang, n_layer):
 #     convert_inner_tensor(res, n_lang, n_layer)
 #     return res
 
-def get_top_bottom(tensor, k=1000):
+def get_top_bottom(tensor, k=1000, modes=[True, False]):
     result = tensor.clone().to(dtype=torch.float64)
     n_lang, n_layer, n_neuron = result.shape
     lang_idx, layer_idx, neuron_idx = torch.meshgrid(
@@ -165,7 +165,7 @@ def get_top_bottom(tensor, k=1000):
     lang_to_id = {lang: i for i, lang in enumerate(lang_list)}
     tb_df = [[[] for _ in range(n_layer)] for _ in range(n_lang)]
     for lang in df['lang'].unique():
-        for mode in [True, False]:
+        for mode in modes:
             df_lang = df[df['lang'] == lang]
             df_lang_sorted = df_lang.sort_values(['score'], ascending=(mode), kind='mergesort').head(k)
 
@@ -206,6 +206,8 @@ def map(
     is_last_token: bool = False,
     max_instances: int = None,
     top_bottom_k: int = None,
+    top_k: int = None,
+    bottom_k: int = None,
     kaggle_dataname_to_save: str =None,
     is_update: bool = None, # is update for kaggle dataset
     parent_dir: str = None,
@@ -255,14 +257,27 @@ def map(
             print(f"saving: {filename}")
             # torch.save(map_neurons, f"{model_name_inf}_{dataset_name_inf}/map_{i}_{model_name_inf}_{dataset_name_inf}/.pt")
     torch.save(result, f"{path_res}/result_{model_name_inf}_{dataset_name_inf}.pt")
+    if top_k:
+        print(f"top_k: {top_k}")
+        top = get_top_bottom(result, k=top_k, modes=[False])
+        print("done doing top")
+        filename = f"{path_res}/map_t{top_k}_{model_name_inf}_{dataset_name_inf}.pt"
+        torch.save(top, filename)
+        print(f"saving: {filename}")
+    if bottom_k:
+        print(f"bottom_k: {bottom_k}")
+        bottom = get_top_bottom(result, k=bottom_k, modes=[True])
+        print("done doing  bottom")
+        filename = f"{path_res}/map_b{bottom_k}_{model_name_inf}_{dataset_name_inf}.pt"
+        torch.save(bottom, filename)
+        print(f"saving: {filename}")
     if top_bottom_k:
         print(f"top_bottom_k: {top_bottom_k}")
-        top_bottom = get_top_bottom(result, k=top_bottom_k)
+        top_bottom = get_top_bottom(result, k=top_bottom_k, modes=[True, False])
         print("done doing top bottom")
         filename = f"{path_res}/map_tb{top_bottom_k}_{model_name_inf}_{dataset_name_inf}.pt"
         torch.save(top_bottom, filename)
         print(f"saving: {filename}")
-
         
     if kaggle_dataname_to_save:
         save_to_kaggle(dataset_name=kaggle_dataname_to_save, data_dir=path_res, is_update=is_update, subdir_name=subdir_name)
@@ -279,6 +294,8 @@ def main():
     parser.add_argument("--is_last_token", action='store_true', help="Set if last token")
     parser.add_argument("--max_instances", type=int, default=None, help="Maximum instances")
     parser.add_argument("--top_bottom_k", type=int, default=None, help="top bottom k")
+    parser.add_argument("--top_k", type=int, default=None, help="top  k")
+    parser.add_argument("--bottom_k", type=int, default=None, help=" bottom k")
     parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
     parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
     parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
@@ -307,6 +324,8 @@ def main():
         is_last_token=args.is_last_token,
         max_instances=args.max_instances,
         top_bottom_k = args.top_bottom_k,
+        top_k = args.top_k,
+        bottom_k = args.bottom_k,
         kaggle_dataname_to_save=args.kaggle_dataname_to_save,
         is_update=args.is_update,
         parent_dir=parent_dir,
