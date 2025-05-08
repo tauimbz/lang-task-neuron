@@ -924,6 +924,7 @@ def intervention_matrix(
             
             assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
             dfs = [df_int_matrix, intv_df]
+            print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
             dfs = [df.set_index("lang") for df in dfs]
             df_int_matrix = pd.concat(dfs, axis=1).reset_index()
         return df_int_matrix
@@ -973,14 +974,13 @@ parser.add_argument('--model_name', type=str, default=None)
 parser.add_argument('--dataset_name', type=str, default=None)
 parser.add_argument('--langs', nargs='+', default=None, help="langs of dataset to be intervened. for dod")
 parser.add_argument('--max_samples', type=int, default=None)
-parser.add_argument('--apply_template', action='store_true', default=None)
+parser.add_argument('--apply_template', action='store_true')
 parser.add_argument('--split', type=str, default="test")
 
 # Property intervensi
 parser.add_argument("--dataset_kaggle_replacer", type=str, default=None,  help="The dataset name in Kaggle, if not Kaggle then empty")
 parser.add_argument("--replacer_filename", type=str,default=None, help="The filename to process")
 parser.add_argument('--replace_method', type=str, default=None)
-parser.add_argument('--lsn', nargs='+', default=None)
 parser.add_argument('--operation_non_target', type=str, default=None)
 parser.add_argument('--operation_target', type=str, default=None)
 parser.add_argument('--range_layers', nargs='+', type=int, default=None)
