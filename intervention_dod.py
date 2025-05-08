@@ -900,7 +900,7 @@ def intervention_matrix(
         lsn_neurons, lsn_languages = lsn
         df_int_matrix = pd.DataFrame()
         gold_difference = dict()
-        if metrics == "dod":
+        if metrics == ["dod"]:
             df_int_matrix, gold_difference = HF_infer_dataset(
                 model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples,is_generate=is_generate,
                 apply_template=apply_template,
