@@ -1049,7 +1049,7 @@ matrix = intervention_matrix(
 
 path_res = f"{parent_dir}res"
 os.makedirs(path_res, exist_ok=True)
-matrix.to_csv(f"{path_res}/{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics}.csv")
+matrix.to_csv(f"{path_res}/{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}.csv")
 
 save_to_kaggle(dataset_name=args.kaggle_dataname_to_save, data_dir=path_res, is_update=args.is_update)
 
