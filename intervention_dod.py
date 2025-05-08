@@ -750,15 +750,15 @@ def HF_infer_dataset(
         #             target_lang=target_lang, operation_non_target=operation_non_target, 
         #             operation_target=operation_target, lsn_languages=lsn_languages)))
     eval_type = ""
-    if metrics == "ppl_full":
+    if "ppl_full" in metrics :
         eval_type = "EVAL_PPL_FULL"
-    elif metrics == "ppl_target":
+    elif "ppl_target" in metrics:
         eval_type = "EVAL_PPL_TARGET"
     elif 'acc' in metrics or 'prec' in metrics or 'recall' in metrics or metrics == None:
         eval_type = "EVAL_TASK"
-    elif metrics == "dod" and intervention:
+    elif "dod" in metrics and intervention:
         eval_type = "DOD_INT"
-    elif metrics == "dod"and not intervention:
+    elif "dod" in metrics and not intervention:
         eval_type = "DOD_NINT"
     if eval_type == "DOD_INT" and not gold_difference:
         raise ValueError("Gold diff must be provided")
