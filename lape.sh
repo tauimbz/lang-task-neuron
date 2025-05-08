@@ -4,7 +4,7 @@ python lape.py  \
     --filename "oz_flores200_997_False" \
     --model_name_inf "Qwen7B" \
     --dataset_name_inf "flores" \
-    --kaggle_dataname_to_save "lape-qwen7-flores" \
+    --kaggle_dataname_to_save "lsn-qwen7-flores" \
 
 
 python lape.py  \
@@ -13,7 +13,7 @@ python lape.py  \
     --filename "oz_flores200_997_False" \
     --model_name_inf "Qwen05B" \
     --dataset_name_inf "flores" \
-    --kaggle_dataname_to_save "lape-qwen05-flores" \
+    --kaggle_dataname_to_save "lsn-qwen05-flores" \
 
 python lape.py  \
     --in_kaggle \
@@ -21,7 +21,7 @@ python lape.py  \
     --filename "oz_flores200_997_False" \
     --model_name_inf "gemma2" \
     --dataset_name_inf "flores" \
-    --kaggle_dataname_to_save "lape-gemma2-flores" \
+    --kaggle_dataname_to_save "lsn-gemma2-flores" \
 
 python lape.py  \
     --in_kaggle \
@@ -29,7 +29,7 @@ python lape.py  \
     --filename "oz_flores200_997_False" \
     --model_name_inf "sea1-5" \
     --dataset_name_inf "flores" \
-    --kaggle_dataname_to_save "lape-sea1-5-flores" \
+    --kaggle_dataname_to_save "lsn-sea1-5-flores" \
 
 
 # python lape.py  \
@@ -38,7 +38,7 @@ python lape.py  \
 #     --filename "oz_flores200_997_False" \
 #     --model_name_inf "sea1-5" \
 #     --dataset_name_inf "flores" \
-#     --kaggle_dataname_to_save "lape-sea1-5-flores" \
+#     --kaggle_dataname_to_save "lsn-sea1-5-flores" \
 #     # --parent_dir_to_save "/workspace/"\
 #     # --is_update 
 
@@ -63,6 +63,6 @@ python lape.py  \
 #     --filename "oz_1" \
 #     --model_name_inf "Qwen05B" \
 #     --dataset_name_inf "xwinograd" \
-#     --kaggle_dataname_to_save "lape-qwen05-xwin-1" \
+#     --kaggle_dataname_to_save "lsn-qwen05-xwin-1" \
 #     # --is_update 
     

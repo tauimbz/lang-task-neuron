@@ -997,6 +997,8 @@ parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent
 
 args = parser.parse_args()
 # args, unknown = parser.parse_known_args()
+from pprint import pprint
+pprint(vars(args))
 
 
 
