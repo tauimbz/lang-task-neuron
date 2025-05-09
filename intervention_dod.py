@@ -10,6 +10,7 @@ from datasets import get_dataset_config_names
 from tqdm import tqdm
 from IPython.display import display
 from kaggle_utils import *
+import evaluate
 
 def generate(model, prompt, with_template=True, max_new_tokens=1):
     """
@@ -501,7 +502,7 @@ def HF_get_prompt_dataset(dataset_name, ds, data, base_lang=None):
             Who does '_' refer to? The answer should be one of '{option1}' or '{option2}'.\n
             Answer:"""
         )
-    elif dataset_name == "xcopa":
+    elif dataset_name == "cambridgeltl/xcopa":
         premise = data['premise']
         choice1 = data['choice1']
         choice2 = data['choice2']
@@ -613,7 +614,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_gener
         correct_idx = dod_lang_idx[dod_baselang]
         gold = answer_options[correct_idx]
         correct_sentence = premise + " " + gold
-    elif dataset_name == "xcopa":
+    elif dataset_name == "cambridgeltl/xcopa":
         choice1 = data['choice1']
         choice2 = data['choice2']
         question = data['question']
