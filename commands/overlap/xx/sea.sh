@@ -6,4 +6,4 @@ python overlap_neurons.py  \
     --model_name_inf "sea7" \
     --dataset_name_inf "flores" \
     --kaggle_dataname_to_save "lsnxx-sea7-flores" \
-    # --maximum 675
+    --maximum 1426

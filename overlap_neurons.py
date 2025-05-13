@@ -60,7 +60,7 @@ def plot_small_hist(ax, data_dict, key, n_layer):
 
     ax.bar(range(n_layer), num_activated, color='b', alpha=0.7)
 
-    ax.set_title(f"{languages[key]}", fontsize=8)
+    ax.set_title(f"{key}", fontsize=8)
     ax.set_xticks(range(n_layer))  # Hide x-axis labels for compact display
 
 
@@ -135,10 +135,11 @@ if not args.maximum:
     res_filename=args.res_filename,
     parent_dir=""
 )
-    
+print(f"opening map top_k")
 ap_filename = f"map_t{maximum}_{args.model_name_inf}_{args.dataset_name_inf}.pt" 
 download_from_kaggle(data_kaggle_result, ap_filename)
 ap = torch.load(f"data/{ap_filename}", weights_only=True)
+print(f"overlapping...")
 
 lsn_lang = overlap(lape, ap, n_layer)
 path_res = f"res/overlap/{args.model_name_inf}_{args.dataset_name_inf}"

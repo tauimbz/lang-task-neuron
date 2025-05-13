@@ -712,6 +712,8 @@ def HF_infer_dataset(
     configs = get_dataset_config_names(dataset_name, trust_remote_code=True) if selected_langs == None else selected_langs
     selected_langs = selected_langs if selected_langs else configs
     # print(f"selected_langs: {selected_langs}")
+    
+    max_instances = max_samples
     dod_languages = langs if langs else selected_langs
     eval_result = {}
     non_int_dod = {}
@@ -732,7 +734,7 @@ def HF_infer_dataset(
         if dataset_relations:
             ds = ds.filter(lambda example: example['predicate_id'] in dataset_relations)
         
-        max_samples = max_samples if max_samples else len(ds)
+        max_samples = min(max_instances, len(ds)) if max_instances else len(ds)
         
         batch_size = batch_size if batch_size else 1
         # dataset_loader = DataLoader(ds, batch_size=batch_size)
