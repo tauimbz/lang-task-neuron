@@ -6,4 +6,4 @@ python overlap_neurons.py  \
     --model_name_inf "gemma2" \
     --dataset_name_inf "flores" \
     --kaggle_dataname_to_save "lsnxx-gemma2-flores" \
-    # --maximum 675
+    --maximum 354

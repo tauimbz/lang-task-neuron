@@ -741,7 +741,7 @@ def HF_infer_dataset(
         # for i, datas in enumerate(tqdm(dataset_loader, desc=f"Processing {lang} Examples", leave=False)):
         for start_idx in tqdm(range(0, max_samples, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
             end_idx = min(start_idx + batch_size, max_samples)
-            batch_data = ds.select(range(start_idx, end_idx))
+            batch_data = ds.select(list(range(start_idx, end_idx)))
             # print(f"processing data {start_idx} to {end_idx}")
             # samples += 1
             # print(f"data: {data}")
@@ -768,13 +768,13 @@ def HF_infer_dataset(
                 assert num_choices, "num choices should not be None"
                 # print(f"len(batched_prompts): {len(batched_prompts)}")
                 # print(f"len(batched_continuations): {len(batched_continuations)}")
-                total_len = [
-                    len(
-                        model.tokenizer(p + " " + c, return_tensors="pt")
-                        .to(model.device)["input_ids"][0]
-                    )
-                    for p, c in zip(batched_prompts, batched_continuations)
-                ]
+                # total_len = [
+                #     len(
+                #         model.tokenizer(p + " " + c, return_tensors="pt")
+                #         .to(model.device)["input_ids"][0]
+                #     )
+                #     for p, c in zip(batched_prompts, batched_continuations)
+                # ]
                 # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
                 input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
                 if intervention:
