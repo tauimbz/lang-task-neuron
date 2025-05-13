@@ -1,4 +1,5 @@
 python get_map_neurons.py  \
+    --in_kaggle \
     --dataset_kaggle "inayarahmanisa/activationxx-gemma2-neurons"\
     --filename "act_flores200_997_False.pt" \
     --num_layer 26 \
