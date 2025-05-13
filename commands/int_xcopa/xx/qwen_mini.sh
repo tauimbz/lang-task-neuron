@@ -2,7 +2,7 @@ python intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-qwen05-flores" \
     --lsn_filename "maplape.pt" \
     --ld_filename "lang_dict" \
-    --dataset_kaggle_replacer "inayarahmanisa/activationxx-qwen05-flores" \
+    --dataset_kaggle_replacer "inayarahmanisa/activationxx-qwen05-neurons" \
     --replacer_filename "max.pt" \
     --hf_token "***REMOVED***" \
     --model_name "Qwen/Qwen2.5-0.5B-Instruct" \

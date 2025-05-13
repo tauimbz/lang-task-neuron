@@ -1,6 +1,6 @@
 python get_map_neurons.py  \
     --in_kaggle \
-    --dataset_kaggle "inayarahmanisa/activationxx-sea7-flores"\
+    --dataset_kaggle "inayarahmanisa/activationxx-sea7-neurons"\
     --filename "act_flores200_997_False.pt" \
     --num_layer 28 \
     --model_name_inf "sea7" \

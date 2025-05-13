@@ -1,6 +1,6 @@
 python lape.py  \
     --in_kaggle \
-    --dataset_kaggle "inayarahmanisa/activationxx-gemma2-flores"\
+    --dataset_kaggle "inayarahmanisa/activationxx-gemma2-neurons"\
     --filename "oz_flores200_997_False" \
     --model_name_inf "gemma2" \
     --dataset_name_inf "flores" \

@@ -2,7 +2,7 @@ python intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-sea7-flores" \
     --lsn_filename "maplape.pt" \
     --ld_filename "lang_dict" \
-    --dataset_kaggle_replacer "inayarahmanisa/activationxx-sea7-flores" \
+    --dataset_kaggle_replacer "inayarahmanisa/activationxx-sea7-neurons" \
     --replacer_filename "max.pt" \
     --hf_token "***REMOVED***" \
     --model_name "SeaLLMs/SeaLLMs-v3-7B-Chat" \

@@ -2,7 +2,7 @@ python intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-gemma2-flores" \
     --lsn_filename "maplape.pt" \
     --ld_filename "lang_dict" \
-    --dataset_kaggle_replacer "inayarahmanisa/activationxx-gemma2-flores" \
+    --dataset_kaggle_replacer "inayarahmanisa/activationxx-gemma2-neurons" \
     --replacer_filename "max.pt" \
     --hf_token "***REMOVED***" \
     --model_name "google/gemma-2-2b-it" \

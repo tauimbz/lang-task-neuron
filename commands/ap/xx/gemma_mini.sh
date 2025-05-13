@@ -1,5 +1,5 @@
 python get_map_neurons.py  \
-    --dataset_kaggle "inayarahmanisa/activationxx-gemma2-flores"\
+    --dataset_kaggle "inayarahmanisa/activationxx-gemma2-neurons"\
     --filename "act_flores200_997_False.pt" \
     --num_layer 26 \
     --model_name_inf "gemma2" \

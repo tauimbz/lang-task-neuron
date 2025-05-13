@@ -1,6 +1,6 @@
 python lape.py  \
     --in_kaggle \
-    --dataset_kaggle "inayarahmanisa/activationxx-qwen05-flores"\
+    --dataset_kaggle "inayarahmanisa/activationxx-qwen05-neurons"\
     --filename "oz_flores200_997_False" \
     --model_name_inf "qwen05" \
     --dataset_name_inf "flores" \
