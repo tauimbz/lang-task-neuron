@@ -1,0 +1,11 @@
+python get_map_neurons.py  \
+    --in_kaggle \
+    --dataset_kaggle "inayarahmanisa/activationxx-qwen05-flores"\
+    --filename "act_flores200_997_False.pt" \
+    --num_layer 24 \
+    --model_name_inf "qwen05" \
+    --dataset_name_inf "flores" \
+    --kaggle_dataname_to_save "lsnxx-qwen05-flores" \
+    --threshold 0.99 0.95 0.90 0.3 \
+    --top_bottom_k 1000 \
+    --is_update

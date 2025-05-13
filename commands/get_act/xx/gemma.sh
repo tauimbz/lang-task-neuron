@@ -5,11 +5,11 @@ python3 get_activations.py  \
     --split "dev" \
     --max_tokens_overzeros 100000 \
     --max_sentence_avgs 100\
-    --selected_langs "als_Latn" "arb_Arab" "hye_Armn" "azj_Latn" "eus_Latn" "bel_Cyrl" "ben_Beng" "bul_Cyrl" "zho_Hans" "hrv_Latn" "nld_Latn" "est_Latn" "fin_Latn" "fra_Latn" "kat_Geor" "deu_Latn" "ell_Grek" "heb_Hebr" "hin_Deva" "hun_Latn" "ind_Latn" "ita_Latn" "jpn_Jpan" "kaz_Cyrl" "kor_Hang" "lit_Latn" "zsm_Latn" "mal_Mlym" "npi_Deva" "mkd_Cyrl" "pes_Arab" "pol_Latn" "por_Latn" "rus_Cyrl" "srp_Cyrl" "spa_Latn" "tgl_Latn" "tam_Taml" "tel_Telu" "tur_Latn" "ukr_Cyrl" "urd_Arab" "uzn_Latn" "vie_Latn" \
+    --selected_langs "eng_Latn" "nld_Latn" "ind_Latn" "zsm_Latn" "vie_Latn" "jpn_Jpan" "zho_Hans" "fra_Latn" "por_Latn" "rus_Cyrl" "est_Latn" "hat_Latn" "ita_Latn" "quy_Latn" "swh_Latn" "tam_Taml" "tha_Thai" "tur_Latn" \
     --batch_size 16 \
-    --kaggle_dataname_to_save "activation3-gemma9-flores" \
+    --kaggle_dataname_to_save "activationxx-gemma9-flores" \
     --parent_dir_to_save "workspace/" \
-    > gemma9_act3.txt 2>&1
+    > gemma9_actxx.txt 2>&1
     
 
 # python3 get_activations.py  \

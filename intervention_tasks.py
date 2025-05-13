@@ -1,19 +1,18 @@
 import argparse
 from argparse import Namespace
 from huggingface_hub import login
-from datasets import load_dataset
+from datasets import load_dataset, get_dataset_config_names
 from model import InferenceModel
 import torch.nn.functional as F
 import math
 import torch 
-from datasets import get_dataset_config_names
 from tqdm import tqdm
 from IPython.display import display
 from kaggle_utils import *
 import evaluate
-from torch.utils.data import DataLoader
 import numpy as np
-# from data_sets import *
+import xcopa_utils
+import xwinograd_utils
 
 def generate(model, prompt, with_template=True, max_new_tokens=1):
     """
@@ -125,7 +124,7 @@ def clean_hooks(infer_model):
     for i in range(len(infer_model.model.model.layers)):
         mlp = infer_model.model.model.layers[i].mlp
         mlp.act_fn._forward_hooks.clear()
-def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn_langs, target_lang, operation_non_target, operation_target, start_idx=None): 
+def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn_langs, target_lang, operation_non_target, operation_target, start_idx=None, attn_mask=None): 
     """
     This changes all neuron lape values to be replaced_values but leave behind a desired target language. 
         replace_method: lape or all
@@ -149,240 +148,240 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
         # start_id_to_intv = -3 if model_name == "Qwen/Qwen2.5-0.5B-Instruct" or model_name == 'Qwen/Qwen2.5-3B-Instruct' else 0
         start_id_to_intv = 0
         layer = int(name)
-        for lang, lsn_lang in lsn_langs.items():
-            # print("ini intervensi")
+        if replacer_tensor is not None:
+            lsn_lang = lsn_langs[target_lang]
             if lsn_lang[layer].numel() == 0:
-                continue
-            if replacer_tensor is not None:
-                if lang == target_lang:
-                    output[0, start_id_to_intv:, lsn_lang[layer].long()] = replacer_tensor[lang][layer][lsn_lang[layer]].to(output.dtype)
-            elif replace_method == "fixed":
-                indexing_tensor = lsn_lang[layer].long().to(output.device)
-                if indexing_tensor.numel() == 0:
-                    continue
-                assert indexing_tensor.max() < output.shape[-1], "Index out of bounds 2!"
-                if lang == target_lang:
-                    if operand_t == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer].long()] *= replace_value_t
-                    elif operand_t == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer].long()] = replace_value_t
-                    else:
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += replace_value_t
-                else:
-                    if operand_nt == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= replace_value_nt
-                    elif operand_nt == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer].long()] = replace_value_nt
-                    elif operand_nt == ".":
-                        pass
-                    else:
-                        output[0, start_id_to_intv:, lsn_lang[layer].long()] += replace_value_nt
-            elif replace_method == "mean":
-                selected = output[0, start_id_to_intv:, lsn_lang[layer]]
-                if selected.numel() == 0:
-                    continue
-                mean_value = output.mean()
-                # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
-                
-                if lang == target_lang:
-                    if operand_t == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
-                    elif operand_t == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
-                    else:
-                        # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
-                else:
-                    if operand_nt == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
-                    elif operand_nt == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
-                    elif operand_nt == ".":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
-                    else:
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
-    
-            elif replace_method == "std":
-                selected = output[0, start_id_to_intv:, lsn_lang[layer]]
-                if selected.numel() == 0:
-                    continue
-                mean_value = output.std()
-                # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
-                
-                if lang == target_lang:
-                    if operand_t == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
-                    elif operand_t == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
-                    else:
-                        # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
-                else:
-                    if operand_nt == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
-                    elif operand_nt == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
-                    elif operand_nt == ".":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
-                    else:
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
-            elif replace_method == "iqr":
-                selected = output[0, start_id_to_intv:, lsn_lang[layer]]
-                if selected.numel() == 0:
-                    continue
-                q1 = output.quantile(0.25)
-                q3 = output.quantile(0.75)
-                mean_value = q3 - q1
-                # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
-                
-                if lang == target_lang:
-                    if operand_t == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
-                    elif operand_t == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
-                    else:
-                        # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
-                else:
-                    if operand_nt == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
-                    elif operand_nt == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
-                    elif operand_nt == ".":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
-                    else:
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
-            elif replace_method == "mad":
-                selected = output[0, start_id_to_intv:, lsn_lang[layer]]
-                if selected.numel() == 0:
-                    continue
-                median = output.median()
-                mean_value = (selected - median).abs().median()
-                # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
-                
-                if lang == target_lang:
-                    if operand_t == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
-                    elif operand_t == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
-                    else:
-                        # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
-                else:
-                    if operand_nt == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
-                    elif operand_nt == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
-                    elif operand_nt == ".":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
-                    else:
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
-            elif replace_method == "median":
-                selected = output[0, start_id_to_intv:, lsn_lang[layer]]
-                if selected.numel() == 0:
-                    continue
-                mean_value = output.median()
-                # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
-                
-                if lang == target_lang:
-                    if operand_t == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
-                    elif operand_t == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
-                    else:
-                        # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
-                else:
-                    if operand_nt == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
-                    elif operand_nt == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
-                    elif operand_nt == ".":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
-                    else:
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                return
+            # output[:, :, lsn_lang[layer].long()] = replacer_tensor[target_lang][layer][lsn_lang[layer]].to(output.dtype)
+            dims = lsn_lang[layer].long()  # [H']
+            replacement_values = replacer_tensor[target_lang][layer][dims].to(output.dtype)  # [H']
+            mask = attn_mask.unsqueeze(-1)  # [B, T, 1]
             
-            elif replace_method == "percent": 
-                # if mode is percentile, we are not operating with replace value/factor anymore, but with that percentile
-                selected = output[0, start_id_to_intv:, lsn_lang[layer]]
-                if selected.numel() == 0:
-                    continue
-                mean_value = output.quantile(replace_value_t/100)
-                # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
-                
-                if lang == target_lang:
-                    if operand_t == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value 
-                    elif operand_t == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value
-                    else:
-                        # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value)
-                else:
-                    if operand_nt == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value
-                    elif operand_nt == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value
-                    elif operand_nt == ".":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
-                    else:
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value
-
-            elif replace_method == "max":
-                # print(f"max: ")
-                # print(f"len()lsn_lang: {len(lsn_lang)}")
-                # print(f"len()lsn_lang: {len(lsn_lang)}")
-                # print(f"layer: {layer}")
+            output_selected = output[:, :, dims]  # [B, T, H']
+            
+            # [H'] -> [1, 1, H'] so it can broadcast across B and T
+            replacement_broadcasted = replacement_values.view(1, 1, -1)
+            
+            output[:, :, dims] = torch.where(
+                mask.bool(),  # [B, T, 1]
+                replacement_broadcasted.expand_as(output_selected),  # [B, T, H']
+                output_selected  # keep original where mask is 0
+            )
+        else:
+            for lang, lsn_lang in lsn_langs.items():
+                print("ini intervensi")
                 if lsn_lang[layer].numel() == 0:
                     continue
-                
-                selected = output[0, start_id_to_intv:, lsn_lang[layer]]
-                # print(f"selected {selected}")
-                if selected.numel() == 0:
-                    continue
-                mean_value = output.max()
-                # print(f"max: {mean_value}")
-                # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
-                
-                if lang == target_lang:
-                    if operand_t == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
-                    elif operand_t == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                if replace_method == "fixed":
+                    indexing_tensor = lsn_lang[layer].long().to(output.device)
+                    if indexing_tensor.numel() == 0:
+                        continue
+                    assert indexing_tensor.max() < output.shape[-1], "Index out of bounds 2!"
+                    if lang == target_lang:
+                        if operand_t == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= replace_value_t
+                        elif operand_t == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = replace_value_t
+                        else:
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += replace_value_t
                     else:
-                        # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
-                else:
-                    if operand_nt == "*":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
-                    elif operand_nt == "=":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
-                    elif operand_nt == ".":
-                        output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                        if operand_nt == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= replace_value_nt
+                        elif operand_nt == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = replace_value_nt
+                        elif operand_nt == ".":
+                            pass
+                        else:
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += replace_value_nt
+                elif replace_method == "mean":
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    if selected.numel() == 0:
+                        continue
+                    mean_value = output.mean()
+                    # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
+                    
+                    if lang == target_lang:
+                        if operand_t == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                        elif operand_t == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                        else:
+                            # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
                     else:
-                        output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                        if operand_nt == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                        elif operand_nt == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                        elif operand_nt == ".":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                        else:
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+        
+                elif replace_method == "std":
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    if selected.numel() == 0:
+                        continue
+                    mean_value = output.std()
+                    # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
+                    
+                    if lang == target_lang:
+                        if operand_t == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                        elif operand_t == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                        else:
+                            # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                    else:
+                        if operand_nt == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                        elif operand_nt == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                        elif operand_nt == ".":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                        else:
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                elif replace_method == "iqr":
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    if selected.numel() == 0:
+                        continue
+                    q1 = output.quantile(0.25)
+                    q3 = output.quantile(0.75)
+                    mean_value = q3 - q1
+                    # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
+                    
+                    if lang == target_lang:
+                        if operand_t == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                        elif operand_t == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                        else:
+                            # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                    else:
+                        if operand_nt == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                        elif operand_nt == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                        elif operand_nt == ".":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                        else:
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                elif replace_method == "mad":
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    if selected.numel() == 0:
+                        continue
+                    median = output.median()
+                    mean_value = (selected - median).abs().median()
+                    # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
+                    
+                    if lang == target_lang:
+                        if operand_t == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                        elif operand_t == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                        else:
+                            # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                    else:
+                        if operand_nt == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                        elif operand_nt == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                        elif operand_nt == ".":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                        else:
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                elif replace_method == "median":
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    if selected.numel() == 0:
+                        continue
+                    mean_value = output.median()
+                    # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
+                    
+                    if lang == target_lang:
+                        if operand_t == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                        elif operand_t == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                        else:
+                            # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                    else:
+                        if operand_nt == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                        elif operand_nt == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                        elif operand_nt == ".":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                        else:
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                
+                elif replace_method == "percent": 
+                    # if mode is percentile, we are not operating with replace value/factor anymore, but with that percentile
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    if selected.numel() == 0:
+                        continue
+                    mean_value = output.quantile(replace_value_t/100)
+                    # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
+                    
+                    if lang == target_lang:
+                        if operand_t == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value 
+                        elif operand_t == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value
+                        else:
+                            # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value)
+                    else:
+                        if operand_nt == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value
+                        elif operand_nt == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value
+                        elif operand_nt == ".":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                        else:
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value
     
+                elif replace_method == "max":
+                    # print(f"max: ")
+                    # print(f"len()lsn_lang: {len(lsn_lang)}")
+                    # print(f"len()lsn_lang: {len(lsn_lang)}")
+                    # print(f"layer: {layer}")
+                    if lsn_lang[layer].numel() == 0:
+                        continue
+                    
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    # print(f"selected {selected}")
+                    if selected.numel() == 0:
+                        continue
+                    mean_value = output.max()
+                    # print(f"max: {mean_value}")
+                    # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
+                    
+                    if lang == target_lang:
+                        if operand_t == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                        elif operand_t == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                        else:
+                            # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                    else:
+                        if operand_nt == "*":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                        elif operand_nt == "=":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                        elif operand_nt == ".":
+                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                        else:
+                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+        
             
     return hook_fn
     
-    
-# ONLY FOR XWINOGRAD
-import torch
-from typing import List, Dict
-import math
 
-def doc_to_choice(doc: Dict) -> List[str]:
-    idx = doc["sentence"].index("_")
-    options = [doc["option1"], doc["option2"]]
-    return [doc["sentence"][:idx] + opt for opt in options]
-
-def doc_to_target(doc: Dict) -> str:
-    idx = doc["sentence"].index("_") + 1
-    return doc["sentence"][idx:].strip()
-
-def doc_to_text(doc: Dict) -> int:
-    answer_to_num = {"1": 0, "2": 1}
-    return answer_to_num[doc["answer"]]
 
 def calculate_logprob(model, prompt: str, continuation: str, is_generate=False ) -> float:
     full_input = prompt + " " + continuation if continuation else prompt
@@ -412,16 +411,10 @@ def calculate_logprob(model, prompt: str, continuation: str, is_generate=False )
         for i, logp in enumerate(token_log_probs):
             print(f"Token {i}: log_prob = {logp:.4f}, perplexity = {math.exp(-logp):.4f}")
         print(f"log_prob: {total_log_prob}")
-
+    # total_log_prob = np.array(total_log_prob).reshape(len(prompt), 4)
     return total_log_prob
 
-
-def calculate_logprob_batch(model, prompts: list[str], continuations: list[str]) -> list[float]:
-    """
-    compute log-probs for a batch of (prompt, continuation) pairs.
-    returns a list of total log-probs, one per input.
-    """
-
+def tokenize_batch(model, prompts: list[str], continuations: list[str]):
     assert len(prompts) == len(continuations), "Mismatch between prompts and continuations"
     inputs = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
 
@@ -429,7 +422,14 @@ def calculate_logprob_batch(model, prompts: list[str], continuations: list[str])
     encoding = model.tokenizer(inputs, return_tensors="pt", padding=True)
     input_ids = encoding["input_ids"].to(model.device)
     attention_mask = encoding["attention_mask"].to(model.device)
-
+    return input_ids, attention_mask
+    
+def calculate_logprob_batch(model, input_ids, attention_mask, prompts: list[str], continuations: list[str]) -> list[float]:
+    """
+    compute log-probs for a batch of (prompt, continuation) pairs.
+    returns a list of total log-probs, one per input.
+    """
+    model.model.eval()
     with torch.no_grad():
         outputs = model.model(input_ids=input_ids, attention_mask=attention_mask)
         logits = outputs.logits[:, :-1, :]  # shift for causal LM
@@ -452,7 +452,7 @@ def calculate_logprob_batch(model, prompts: list[str], continuations: list[str])
         cont_mask = loss_mask[i, prompt_len:]
         total = cont_log_probs[cont_mask].sum().item()
         log_probs_per_example.append(total)
-
+    # del logits, log_probs
     return log_probs_per_example
 
 
@@ -476,27 +476,6 @@ def calc_perplexity_answer(eval_type, prompt, continuation, model, is_generate=F
         print(f"perplexity: {perplexity}")
     return perplexity
     
-def evaluate_task(model, doc: Dict):
-    choices = doc_to_choice(doc)
-    target = doc_to_target(doc)
-    correct_idx = doc_to_text(doc)
-
-    print("Evaluating XWinograd Doc:\n")
-    print("Original Sentence:", doc["sentence"])
-    print("Target:", target)
-    print("Choices:", choices)
-
-    logprobs = [calculate_logprob(model, choice, target) for choice in choices]
-    
-    for i, logp in enumerate(logprobs):
-        print(f"Choice {i+1}: '{choices[i] + ' ' + target}'")
-        print(f"  → Log Probability: {logp:.4f}")
-
-    pred_idx = int(logprobs[0] > logprobs[1])
-    is_correct = (pred_idx == correct_idx)
-
-    print(f"\nPredicted: Choice {pred_idx + 1} | Correct: Choice {correct_idx + 1}")
-    print("✅ Correct!" if is_correct else "❌ Incorrect.")
 
 
 def HF_get_prompt_dataset(dataset_name, ds, data, base_lang=None):
@@ -647,13 +626,13 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
     elif dataset_name == "Muennighoff/xwinograd": #👍 same as lm eval harness
         option1 = data['option1']
         option2 = data['option2']
-        choices = doc_to_choice(data)
-        target = doc_to_target(data)
-        correct_idx = doc_to_text(data)
+        choices = xwinograd_utils.doc_to_choice(data)
+        target = xwinograd_utils.doc_to_target(data)
+        correct_idx = xwinograd_utils.doc_to_text(data)
         gold = choices[correct_idx]
-        correct_sentence = choices[correct_idx]
+        correct_sentence = gold + " " + target
         num_choices = 2
-        target = [target * num_choices]
+        target = [target for i in range(num_choices)]
         
     elif dataset_name == "CohereLabs/include-lite-44": #👍 same as lm eval harness
         option_a, option_b, option_c, option_d = tuple(data['choices'])
@@ -664,7 +643,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         gold = target[correct_idx]
         correct_sentence = choices + " " + gold
         num_choices = 4
-        choices = [choices * num_choices]
+        choices = [choices for i in range(num_choices)]
         
     elif dataset_name.endswith("MLAMA-dod"):
         # print(f"dod_languages: {dod_languages}")
@@ -686,10 +665,17 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         choice1 = data['choice1']
         choice2 = data['choice2']
         question = data['question']
-        choices = [choice1, choice2]
-        gold = choices[data['label']]
-        premise = data["premise"]
-        correct_sentence = f"The {question} of {premise} is {gold}"
+        answer_options = [choice1, choice2]
+
+        fn_name = f"doc_to_text_{dod_baselang}"
+        doc_to_text_lang = getattr(xcopa_utils, fn_name)
+        correct_idx = data['label']
+        choices = doc_to_text_lang(data)
+        target = xcopa_utils.doc_to_choice(data)
+        gold = target[correct_idx]
+        correct_sentence = choices + " " + gold
+        num_choices = 2
+        choices = [choices for i in range(num_choices)]
     elif dataset_name == "facebook/flores":
         base_lang_sentence = 'sentence_eng'
         choice1 = [i for i in data.keys() if i.startswith(base_lang_sentence)]
@@ -859,13 +845,13 @@ def HF_infer_dataset(
         
         batch_size = batch_size if batch_size else 1
         # dataset_loader = DataLoader(ds, batch_size=batch_size)
-        print(f"batch_size: {batch_size}")
+        # print(f"batch_size: {batch_size}")
         # samples = 0
         # for i, datas in enumerate(tqdm(dataset_loader, desc=f"Processing {lang} Examples", leave=False)):
         for start_idx in tqdm(range(0, max_samples, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
             end_idx = min(start_idx + batch_size, max_samples)
             batch_data = ds.select(range(start_idx, end_idx))
-            print(f"processing data {start_idx} to {end_idx}")
+            # print(f"processing data {start_idx} to {end_idx}")
             # samples += 1
             # print(f"data: {data}")
             # print(f"Eval_type: {eval_type}")
@@ -874,16 +860,7 @@ def HF_infer_dataset(
             # text = model.get_templated_prompt(prompt, apply_template)
             # input_text_only = model.tokenizer(text, return_tensors="pt")["input_ids"].to(model.device)
 
-            if intervention:
-                # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
-                clean_hooks(model)
-                for i in (range_layers):
-                    mlp = model.model.model.layers[i].mlp
-                    handlers.append(mlp.act_fn.register_forward_hook(
-                        set_activation_mlp_v2(
-                            replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
-                            target_lang=target_lang, operation_non_target=operation_non_target, 
-                            operation_target=operation_target )))
+            
             if eval_type == "EVAL_TASK":
                 batched_prompts = []
                 batched_continuations = []
@@ -891,20 +868,42 @@ def HF_infer_dataset(
                 num_choices = None
                 # print(f"datas: {datas}")
                 for data in batch_data:
-                    print(f"data: {data}")
-                    choices, target, is_generate, correct_idx, num_choices, _ = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate)
+                    # print(f"data: {data}")
+                    choices, target, is_generate, correct_idx, num_choices, _ = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
+                    # print(f"choices: {choices}\ntarget: {target}")
                     assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.extend(choices)
                     batched_continuations.extend(target)
-                    batched_correct_idx.extend(correct_idx)
-                print(f"batched_prompts: {batched_prompts}")
-                print(f"batched_continuations: {batched_continuations}")
-                print(f"batched_correct_idx: {batched_correct_idx}")
+                    batched_correct_idx.append(correct_idx)
+                # print(f"batched_prompts: {batched_prompts}")
+                # print(f"batched_continuations: {batched_continuations}")
+                # print(f"batched_correct_idx: {batched_correct_idx}")
                 
                 assert num_choices, "num choices should not be None"
-                log_probs = calculate_logprob_batch(model, batched_prompts, batched_continuations)
-                log_probs = np.array(log_probs).reshape(len(batched_prompts), 4)
-                predictions = log_probs.argmax(dim=1)
+                # print(f"len(batched_prompts): {len(batched_prompts)}")
+                # print(f"len(batched_continuations): {len(batched_continuations)}")
+                total_len = [
+                    len(
+                        model.tokenizer(p + " " + c, return_tensors="pt")
+                        .to(model.device)["input_ids"][0]
+                    )
+                    for p, c in zip(batched_prompts, batched_continuations)
+                ]
+                # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
+                input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
+                if intervention:
+                    # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
+                    clean_hooks(model)
+                    for i in (range_layers):
+                        mlp = model.model.model.layers[i].mlp
+                        handlers.append(mlp.act_fn.register_forward_hook(
+                            set_activation_mlp_v2(
+                                replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
+                                target_lang=target_lang, operation_non_target=operation_non_target, 
+                                operation_target=operation_target, attn_mask=attn_mask)))
+                log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
+                log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
+                predictions = log_probs.argmax(axis=1)
                 result_per_lang['pred'].extend(predictions)
                 result_per_lang['gold'].extend(batched_correct_idx)
                 
@@ -1007,22 +1006,22 @@ def intervention_matrix(
                 apply_template=apply_template,batch_size=batch_size,
                 intervention = False,
                 split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario="baseline", selected_langs=selected_langs)
-        # df_int_matrix = baseline_df
+        
         # INTERVENTION PART
-        # target_langs = target_langs if target_langs!= None else lsn_languages.get_all_idx()
-        # for target_lang in target_langs:
-        #     intv_df = HF_infer_dataset(
-        #         model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
-        #         apply_template=apply_template,batch_size=batch_size,
-        #         intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
-        #         split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
-        #     print(f"df_int_matrix: {df_int_matrix}")
-        #     print(f"intv_df: {intv_df}")
-        #     assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
-        #     dfs = [df_int_matrix, intv_df]
-        #     print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
-        #     dfs = [df.set_index("lang") for df in dfs]
-        #     df_int_matrix = pd.concat(dfs, axis=1).reset_index()
+        target_langs = target_langs if target_langs!= None else lsn_languages.get_all_idx()
+        for target_lang in target_langs:
+            intv_df = HF_infer_dataset(
+                model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
+                apply_template=apply_template,batch_size=batch_size,
+                intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
+                split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
+            print(f"df_int_matrix: {df_int_matrix}")
+            print(f"intv_df: {intv_df}")
+            assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
+            dfs = [df_int_matrix, intv_df]
+            print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
+            dfs = [df.set_index("lang") for df in dfs]
+            df_int_matrix = pd.concat(dfs, axis=1).reset_index()
         return df_int_matrix
 
 
@@ -1046,16 +1045,6 @@ def alter_name(operation_target, operation_non_target, replacer_filename=None):
 # selected langs is the lang initial, langs is the lang intervener
 # 'target_langs' HAS TO BE the same lang as 'langs' but langs is in dataset language code, 
 # target langs is INDEX OF THAT LANGUAGE IN LSN.
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1091,36 +1080,36 @@ parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="D
 parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
 parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
 #MODIF
-# args = parser.parse_args()
-args, unknown = parser.parse_known_args()
-from argparse import Namespace
+args = parser.parse_args()
+# args, unknown = parser.parse_known_args()
+# from argparse import Namespace
 
-args = Namespace(
-    dataset_kaggle="inayarahmanisa/lsn-qwen05-flores",
-    lsn_filename="maplape.pt",
-    ld_filename="lang_dict",
-    dataset_kaggle_replacer="inayarahmanisa/activation-qwen05-flores",
-    replacer_filename="max.pt",
-    hf_token="***REMOVED***",
-    model_name="Qwen/Qwen2.5-0.5B-Instruct",
-    dataset_name="CohereLabs/include-lite-44",
-    split="test",
-    replace_method="percent",
-    operation_non_target=".1",
-    operation_target="=10",
-    metrics="acc",
-    langs=None,
-    selected_langs=["Indonesian", "Japanese"],
-    kaggle_dataname_to_save=None,
-    is_update=False,
-    parent_dir_to_save="",
-    max_samples=32,
-    show_df_per_lang=False,
-    range_layers=None,
-    target_langs=None,
-    apply_template=False,
-    batch_size = 16
-)
+# args = Namespace(
+#     dataset_kaggle="inayarahmanisa/lsn-qwen05-flores",
+#     lsn_filename="maplape.pt",
+#     ld_filename="lang_dict",
+#     dataset_kaggle_replacer="inayarahmanisa/activation-qwen05-flores",
+#     replacer_filename="max.pt",
+#     hf_token="***REMOVED***",
+#     model_name="Qwen/Qwen2.5-0.5B-Instruct",
+#     dataset_name="cambridgeltl/xcopa",
+#     split="test",
+#     replace_method="percent",
+#     operation_non_target=".1",
+#     operation_target="=10",
+#     metrics="acc",
+#     langs=None,
+#     selected_langs=["id"],
+#     kaggle_dataname_to_save=None,
+#     is_update=False,
+#     parent_dir_to_save="",
+#     max_samples=None,
+#     show_df_per_lang=False,
+#     range_layers=None,
+#     target_langs=[0],
+#     apply_template=False,
+#     batch_size = 6
+# )
 #END MODIF
 
 

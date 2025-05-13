@@ -51,6 +51,20 @@ over_zero = torch.stack(over_zero, dim=-1)
 
 num_layers, intermediate_size, lang_num = over_zero.size()
 
+
+def accumulate(lape):
+    all_langs = []
+    for lang in range(len(lape)):
+        sum_per_lang = 0
+        perlang = lape[lang]
+        for l in range(len(perlang)):
+            sum_per_lang += int(lape[lang][l].size(0))
+        all_langs.append(sum_per_lang)
+        # print(int(lape[lang][2].size(0)))
+        # print(len(lape[lang]))
+    return all_langs
+
+
 def activation():
     top_rate = 0.01
     filter_rate = 0.95
@@ -99,6 +113,8 @@ def activation():
         for l, h in enumerate(layer_index):
             layer_index[l] = torch.tensor(h).long()
         final_indice.append(layer_index)
+    maximum = max(accumulate(final_indice))
+    print(f"maximum neurons in a language: {maximum}")
     path_res = f"{parent_dir}res/lape"
     os.makedirs(path_res, exist_ok=True)
     name_to_save = f"{args.model_name_inf}_{args.dataset_name_inf}"
