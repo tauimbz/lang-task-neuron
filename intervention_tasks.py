@@ -740,6 +740,7 @@ def HF_infer_dataset(
         # samples = 0
         # for i, datas in enumerate(tqdm(dataset_loader, desc=f"Processing {lang} Examples", leave=False)):
         for start_idx in tqdm(range(0, max_samples, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
+            print(f"max_samples: {max_samples}")
             end_idx = min(start_idx + batch_size, max_samples)
             print(f"processing data {start_idx} to {end_idx}")
             batch_data = ds.select(list(range(start_idx, end_idx)))
