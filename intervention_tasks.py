@@ -11,6 +11,9 @@ from tqdm import tqdm
 from IPython.display import display
 from kaggle_utils import *
 import evaluate
+from torch.utils.data import DataLoader
+import numpy as np
+# from data_sets import *
 
 def generate(model, prompt, with_template=True, max_new_tokens=1):
     """
@@ -122,7 +125,7 @@ def clean_hooks(infer_model):
     for i in range(len(infer_model.model.model.layers)):
         mlp = infer_model.model.model.layers[i].mlp
         mlp.act_fn._forward_hooks.clear()
-def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn_langs, target_lang, operation_non_target, operation_target, start_idx): 
+def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn_langs, target_lang, operation_non_target, operation_target, start_idx=None): 
     """
     This changes all neuron lape values to be replaced_values but leave behind a desired target language. 
         replace_method: lape or all
@@ -413,6 +416,46 @@ def calculate_logprob(model, prompt: str, continuation: str, is_generate=False )
     return total_log_prob
 
 
+def calculate_logprob_batch(model, prompts: list[str], continuations: list[str]) -> list[float]:
+    """
+    compute log-probs for a batch of (prompt, continuation) pairs.
+    returns a list of total log-probs, one per input.
+    """
+
+    assert len(prompts) == len(continuations), "Mismatch between prompts and continuations"
+    inputs = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
+
+    # Tokenize all inputs with padding
+    encoding = model.tokenizer(inputs, return_tensors="pt", padding=True)
+    input_ids = encoding["input_ids"].to(model.device)
+    attention_mask = encoding["attention_mask"].to(model.device)
+
+    with torch.no_grad():
+        outputs = model.model(input_ids=input_ids, attention_mask=attention_mask)
+        logits = outputs.logits[:, :-1, :]  # shift for causal LM
+        labels = input_ids[:, 1:]           # shift labels accordingly
+
+    # Compute log-probs
+    log_probs = F.log_softmax(logits, dim=-1)
+
+    # Gather log probs of actual tokens
+    token_log_probs = torch.gather(log_probs, 2, labels.unsqueeze(-1)).squeeze(-1)
+
+    # Mask padding
+    loss_mask = (labels != model.tokenizer.pad_token_id)
+    
+    # Compute total logprob only over continuation part
+    log_probs_per_example = []
+    for i, (prompt, continuation) in enumerate(zip(prompts, continuations)):
+        prompt_len = len(model.tokenizer(prompt, return_tensors="pt").input_ids[0]) - 1
+        cont_log_probs = token_log_probs[i, prompt_len:]
+        cont_mask = loss_mask[i, prompt_len:]
+        total = cont_log_probs[cont_mask].sum().item()
+        log_probs_per_example.append(total)
+
+    return log_probs_per_example
+
+
 def calc_perplexity_answer(eval_type, prompt, continuation, model, is_generate=False):
     perplexity = 0
     if eval_type == "EVAL_PPL_FULL":
@@ -502,6 +545,16 @@ def HF_get_prompt_dataset(dataset_name, ds, data, base_lang=None):
             Who does '_' refer to? The answer should be one of '{option1}' or '{option2}'.\n
             Answer:"""
         )
+    elif dataset_name == "CohereLabs/include-lite-44":
+        option_a, option_b, option_c, option_d = tuple(data['choices'])
+        question = data['question']
+        correct_idx = data['answer']
+        choices = ['A', 'B', 'C', 'D'] 
+        target = f"{question.strip()}\nA. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}\nAnswer:"
+        prompt = (
+            f"""
+            {target}"""
+        )
     elif dataset_name == "cambridgeltl/xcopa":
         premise = data['premise']
         choice1 = data['choice1']
@@ -553,7 +606,7 @@ def HF_get_prompt_dataset(dataset_name, ds, data, base_lang=None):
     return prompt
 
 
-def HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate, dod_baselang= None, dod_languages=None):
+def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, dod_baselang= None, dod_languages=None):
     """
     Input:
     - ds: return of load_dataset(), get special configuration for some dataset e.g intents_set. 
@@ -569,34 +622,50 @@ def HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_gener
     if (eval_type.startswith("DOD") and not dod_baselang):
         raise ValueError("DOD props must be provided")
         
-    answer_options = choices = []
+    choices = []
     gold = ""
     premise = ""
     correct_sentence = ""
     correct_idx = None
+    target = None
+    num_choices = None
     if dataset_name == "AmazonScience/massive":
         # ds = load_dataset(dataset_name, lang, split=split)
         intents = ds.features['intent'].names
         scenarios = ds.features['scenario'].names
         scenario = scenarios[data['scenario']]
         gold = intents[data['intent']].split("_", 1)[-1]
-        answer_options = [intent[intent.find('_')+1:] for intent in intents if intent.startswith(scenario)]
+        choices = [intent[intent.find('_')+1:] for intent in intents if intent.startswith(scenario)]
         premise = data["utt"]
         correct_sentence = f"The intent of {premise} is {gold}"
+        
     elif dataset_name == "facebook/xnli":
-        answer_options = ['entailment', 'neutral', 'contradiction']
-        gold = answer_options[data['label']]
+        choices = ['entailment', 'neutral', 'contradiction']
+        gold = choices[data['label']]
         premise = data["premise"]
         correct_sentence = f"The relation between the premise and  hypothesis is {gold}"
     elif dataset_name == "Muennighoff/xwinograd": #👍 same as lm eval harness
         option1 = data['option1']
         option2 = data['option2']
-        answer_options = [option1, option2]
         choices = doc_to_choice(data)
         target = doc_to_target(data)
         correct_idx = doc_to_text(data)
-        gold = answer_options[correct_idx]
+        gold = choices[correct_idx]
         correct_sentence = choices[correct_idx]
+        num_choices = 2
+        target = [target * num_choices]
+        
+    elif dataset_name == "CohereLabs/include-lite-44": #👍 same as lm eval harness
+        option_a, option_b, option_c, option_d = tuple(data['choices'])
+        question = data['question']
+        correct_idx = data['answer']
+        target = ['A', 'B', 'C', 'D'] 
+        choices = f"{question.strip()}\nA. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}\nAnswer:"
+        gold = target[correct_idx]
+        correct_sentence = choices + " " + gold
+        num_choices = 4
+        choices = [choices * num_choices]
+        
     elif dataset_name.endswith("MLAMA-dod"):
         # print(f"dod_languages: {dod_languages}")
         base_lang_sub = f'sub_{dod_baselang}'
@@ -606,20 +675,19 @@ def HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_gener
         
         dod_all_langs = [i for i in dod_languages]
         
-        answer_options.extend([data[f"obj_{i}"] for i in dod_all_langs])
-        # print(f"answer_options: {answer_options}")
+        choices.extend([data[f"obj_{i}"] for i in dod_all_langs])
         # print(f"dod_baselang: {dod_baselang}")
         premise = data['template'].replace("[X]", data[base_lang_sub]).replace(" [Y]", "")
         # print(f"premise: {premise}")
         correct_idx = dod_lang_idx[dod_baselang]
-        gold = answer_options[correct_idx]
+        gold = choices[correct_idx]
         correct_sentence = premise + " " + gold
     elif dataset_name == "cambridgeltl/xcopa":
         choice1 = data['choice1']
         choice2 = data['choice2']
         question = data['question']
-        answer_options = [choice1, choice2]
-        gold = answer_options[data['label']]
+        choices = [choice1, choice2]
+        gold = choices[data['label']]
         premise = data["premise"]
         correct_sentence = f"The {question} of {premise} is {gold}"
     elif dataset_name == "facebook/flores":
@@ -639,7 +707,6 @@ def HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_gener
         # choice1 = data['choice1']
         # choice2 = data['choice2']
         # question = data['question']
-        answer_options = [choice1, choice2]
         choices = [choice1, choice2]
         target = ""
         correct_sentence = choice2
@@ -647,7 +714,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_gener
     else:
         print("Dataset is not available yet!")
         raise ValueError("Dataset is not available yet!")
-    assert len(answer_options) != 0
+    assert len(choices) != 0
     assert gold
     assert correct_idx != None
     
@@ -655,61 +722,61 @@ def HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_gener
     option_log_probs = []
     pred_log_prob = tuple()
     gold_log_prob = tuple()
-    # print(f"answer_options: {answer_options}")
     if eval_type == "DOD_NINT":
         assert dod_lang_dict, "dod_lang_dict should be defined"
-        difflogprob_per_lang = dict()
-        gold_log_prob = 0
+        # difflogprob_per_lang = dict()
+        # gold_log_prob = 0
         # print(f"dod_lang_dict: {dod_lang_dict}")
-        logprobs = []
-        for idx, option in enumerate(answer_options):
-            logprob = calculate_logprob(model, premise, option, is_generate)
-            logprobs.append(logprob)
-        gold_logprob = logprobs[correct_idx]
-        diff_logprobs = [lp - gold_logprob for lp in logprobs]
-        for idx in (dod_lang_dict.keys()):
-            difflogprob_per_lang[dod_lang_dict[idx]] = diff_logprobs[idx]
+        return choices, premise, correct_idx, is_generate
+        # for idx, option in enumerate(choices):
+        #     logprob = calculate_logprob(model, premise, option, is_generate)
+        #     if idx == correct_idx:
+        #         gold_log_prob = logprob
+        #         difflogprob_per_lang[dod_lang_dict[idx]] = 0
+        #     else:
+        #         difflogprob_per_lang[dod_lang_dict[idx]] = logprob - gold_log_prob
+        # return difflogprob_per_lang
         
-        return difflogprob_per_lang
     if eval_type == "DOD_INT":
         assert dod_lang_dict, "dod_lang_dict should be defined"
         assert len(dod_languages) <= 2, f"more than 2 dod lang: {dod_languages}"
-        assert len(answer_options) <= 2, f"more than 2 answer_options: {answer_options}"
-        # print(f"dod_languages: {dod_languages}")
-        # print(f"answer_options: {answer_options}")
-        # print(f"correct_idx: {correct_idx}")
+        assert len(choices) <= 2, f"more than 2 choices: {choices}"
+        difflogprob_per_lang = dict()
         gold_log_prob = 0
         # print(f"dod_lang_dict: {dod_lang_dict}")
         difference = 0
-        logprobs = []
-        for idx, option in enumerate(answer_options):
-            logprob = calculate_logprob(model, premise, option, is_generate)
-            logprobs.append(logprob)
-        gold_logprob = logprobs[correct_idx]
-        diff_logprobs = [lp - gold_logprob for lp in logprobs]
-        difference = [diff_logprobs[i] for i in range(len(diff_logprobs)) if i != correct_idx]
-        return difference[0]
-        
+        return choices, premise, correct_idx, is_generate
+        # for idx, option in enumerate(choices):
+        #     logprob = calculate_logprob(model, premise, option, is_generate)
+        #     if idx == correct_idx:
+        #         gold_log_prob = logprob
+        #     else:
+        #         difference = logprob - gold_log_prob 
+        #     # seq_log_probs = calc_logprob_answer(text, option, model, is_generate)
+        # return difference
             
     if eval_type == "EVAL_TASK":
-        for idx, option in enumerate(answer_options):
-            seq_log_probs = calculate_logprob(model, choices[idx], target, is_generate) 
-            # seq_log_probs = calc_logprob_answer(text, option, model, is_generate)
-            if option.lower() == gold.lower():
-                gold_log_prob = (idx, seq_log_probs)
-            option_log_probs.append((idx, option, seq_log_probs))
-            if seq_log_probs >= chosen_prob:
-                chosen_prob = seq_log_probs
-                pred_log_prob = (idx, option, seq_log_probs)
-    
+        assert num_choices, "num_choices must be defined"
+        return choices, target, is_generate, correct_idx, num_choices, gold
         
-        assert len(pred_log_prob) == 3
-        assert len(gold_log_prob) == 2
-        return option_log_probs, pred_log_prob, gold_log_prob
+            
+        # for idx, option in enumerate(choices):
+        #     seq_log_probs = calculate_logprob(model, choices[idx], target, is_generate) 
+        #     # seq_log_probs = calc_logprob_answer(text, option, model, is_generate)
+        #     if option.lower() == gold.lower():
+        #         gold_log_prob = (idx, seq_log_probs)
+        #     option_log_probs.append((idx, option, seq_log_probs))
+        #     if seq_log_probs >= chosen_prob:
+        #         chosen_prob = seq_log_probs
+        #         pred_log_prob = (idx, option, seq_log_probs)
+        # assert len(pred_log_prob) == 3
+        # assert len(gold_log_prob) == 2
+        # return option_log_probs, pred_log_prob, gold_log_prob
     elif eval_type.startswith("EVAL_PPL"):
         assert correct_sentence
-        perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
-        return perplexity_gold
+        return eval_type, choices[correct_idx], target, is_generate
+        # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
+        # return perplexity_gold
         
 def HF_make_df_per_lang(rows, prompt, eval_type, option_log_probs=None, pred_log_prob=None, gold_log_prob=None):
     row = dict()
@@ -730,7 +797,7 @@ def HF_make_df_per_lang(rows, prompt, eval_type, option_log_probs=None, pred_log
 
 def HF_infer_dataset(
         model, dataset_name, dataset_relations=None, langs=None, max_samples=None, is_generate=False,
-        apply_template=True, 
+        apply_template=True, batch_size=None,
         intervention = False, replace_method=None, replacer_tensor=None, lsn_langs = [], target_lang=None, operation_non_target="*1", operation_target="*1", range_layers=[1], lsn_languages={},
         split="test", show_df_per_lang=False, metrics=None, scenario=None, selected_langs = None, gold_difference = None):
     """
@@ -785,16 +852,27 @@ def HF_infer_dataset(
         
         
         ds = load_dataset(dataset_name, lang, split=split, trust_remote_code=True)
-        ds = ds.filter(lambda example: example['predicate_id'] in dataset_relations) if dataset_relations else ds
-        samples = 0
-        for i, data in enumerate(tqdm(ds, desc=f"Processing {lang} Examples", leave=False)):
-            samples += 1
+        if dataset_relations:
+            ds = ds.filter(lambda example: example['predicate_id'] in dataset_relations)
+        
+        max_samples = max_samples if max_samples else len(ds)
+        
+        batch_size = batch_size if batch_size else 1
+        # dataset_loader = DataLoader(ds, batch_size=batch_size)
+        print(f"batch_size: {batch_size}")
+        # samples = 0
+        # for i, datas in enumerate(tqdm(dataset_loader, desc=f"Processing {lang} Examples", leave=False)):
+        for start_idx in tqdm(range(0, max_samples, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
+            end_idx = min(start_idx + batch_size, max_samples)
+            batch_data = ds.select(range(start_idx, end_idx))
+            print(f"processing data {start_idx} to {end_idx}")
+            # samples += 1
             # print(f"data: {data}")
             # print(f"Eval_type: {eval_type}")
             clean_hooks(model)
-            prompt = HF_get_prompt_dataset(dataset_name, ds, data)
-            text = model.get_templated_prompt(prompt, apply_template)
-            input_text_only = model.tokenizer(text, return_tensors="pt")["input_ids"].to(model.device)
+            # prompt = HF_get_prompt_dataset(dataset_name, ds, data)
+            # text = model.get_templated_prompt(prompt, apply_template)
+            # input_text_only = model.tokenizer(text, return_tensors="pt")["input_ids"].to(model.device)
 
             if intervention:
                 # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
@@ -805,40 +883,56 @@ def HF_infer_dataset(
                         set_activation_mlp_v2(
                             replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
                             target_lang=target_lang, operation_non_target=operation_non_target, 
-                            operation_target=operation_target, start_idx=input_text_only.size(-1))))
+                            operation_target=operation_target )))
             if eval_type == "EVAL_TASK":
-                #TODO: disini kalo metrics=ppl maka ganti jangan HF_calculate_answer
-                option_log_probs, pred_log_prob, gold_log_prob = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate=is_generate)
-                result_per_lang['pred'].append(pred_log_prob[0])
-                result_per_lang['gold'].append(gold_log_prob[0])
-                if show_df_per_lang:
-                    df_per_lang_rows = HF_make_df_per_lang(df_per_lang_rows, prompt, eval_type, option_log_probs, pred_log_prob, gold_log_prob)
+                batched_prompts = []
+                batched_continuations = []
+                batched_correct_idx = []
+                num_choices = None
+                # print(f"datas: {datas}")
+                for data in batch_data:
+                    print(f"data: {data}")
+                    choices, target, is_generate, correct_idx, num_choices, _ = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate)
+                    assert len(choices) == len(target), "length choices and target must be the same!"
+                    batched_prompts.extend(choices)
+                    batched_continuations.extend(target)
+                    batched_correct_idx.extend(correct_idx)
+                print(f"batched_prompts: {batched_prompts}")
+                print(f"batched_continuations: {batched_continuations}")
+                print(f"batched_correct_idx: {batched_correct_idx}")
                 
-            if eval_type.startswith("EVAL_PPL"):
-                perplexity = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate=is_generate)
-                result_per_lang['gold'].append(perplexity)
-                if show_df_per_lang:
-                    df_per_lang_rows = HF_make_df_per_lang(df_per_lang_rows, prompt, eval_type, gold_log_prob=perplexity)
+                assert num_choices, "num choices should not be None"
+                log_probs = calculate_logprob_batch(model, batched_prompts, batched_continuations)
+                log_probs = np.array(log_probs).reshape(len(batched_prompts), 4)
+                predictions = log_probs.argmax(dim=1)
+                result_per_lang['pred'].extend(predictions)
+                result_per_lang['gold'].extend(batched_correct_idx)
                 
-            if eval_type.startswith("DOD"):
-                if eval_type == "DOD_NINT":
+            # if eval_type.startswith("EVAL_PPL"):
+            #     perplexity = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate=is_generate)
+            #     result_per_lang['gold'].append(perplexity)
+            #     if show_df_per_lang:
+            #         df_per_lang_rows = HF_make_df_per_lang(df_per_lang_rows, prompt, eval_type, gold_log_prob=perplexity)
+                
+            # if eval_type.startswith("DOD"):
+            #     if eval_type == "DOD_NINT":
                     
-                    dod_dict = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate, dod_baselang=lang, dod_languages=dod_languages)
-                    assert dod_dict.keys() == non_int_dod[lang].keys(), f"the keys are notthe same! {dod_dict.keys()}, {non_int_dod[lang].keys()}"
-                    for key in non_int_dod[lang].keys():
-                        non_int_dod[lang][key].append(dod_dict[key]) 
-                else:
-                    target_lang_dod = langs[target_lang]
-                    # print(f"target_lang_dod: {target_lang_dod}")
-                    difference = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate=is_generate, dod_baselang=lang, dod_languages=[lang, target_lang_dod])
+            #         dod_dict = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate, dod_baselang=lang, dod_languages=dod_languages)
+            #         assert dod_dict.keys() == non_int_dod[lang].keys(), f"the keys are notthe same! {dod_dict.keys()}, {non_int_dod[lang].keys()}"
+            #         for key in non_int_dod[lang].keys():
+            #             non_int_dod[lang][key].append(dod_dict[key]) 
+            #     else:
+            #         target_lang_dod = langs[target_lang]
+            #         # print(f"target_lang_dod: {target_lang_dod}")
+            #         difference = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate=is_generate, dod_baselang=lang, dod_languages=[lang, target_lang_dod])
                     
-                    result_per_lang['pred'].append(difference)
-                    # print(f"gold_difference: {gold_difference}")
-                    result_per_lang['gold'] = (gold_difference[lang][target_lang_dod])
-                    # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
+            #         result_per_lang['pred'].append(difference)
+            #         # print(f"gold_difference: {gold_difference}")
+            #         result_per_lang['gold'] = (gold_difference[lang][target_lang_dod])
+            #         # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
             # if max_samples and len(result_per_lang["gold"]) >= max_samples:
-            if max_samples and samples >= max_samples:
-                break
+            # if max_samples and samples >= max_samples:
+            #     break
             # cleanup
             for handler in handlers:
                 handler.remove()
@@ -850,16 +944,16 @@ def HF_infer_dataset(
             eval_result[lang] = eval_per_lang
             
 
-        if eval_type.startswith("EVAL_PPL"):
-            eval_per_lang = eval_ppl(result_per_lang['gold'])
-            eval_result[lang] = eval_per_lang
+        # if eval_type.startswith("EVAL_PPL"):
+        #     eval_per_lang = eval_ppl(result_per_lang['gold'])
+        #     eval_result[lang] = eval_per_lang
 
-        if eval_type.startswith("DOD_NINT"):
-            eval_result[lang] = 0
+        # if eval_type.startswith("DOD_NINT"):
+        #     eval_result[lang] = 0
             
-        if eval_type.startswith("DOD_INT"):
-            eval_per_lang = eval_dod(preds=result_per_lang['pred'], refs=result_per_lang['gold'])
-            eval_result[lang] = eval_per_lang 
+        # if eval_type.startswith("DOD_INT"):
+        #     eval_per_lang = eval_dod(preds=result_per_lang['pred'], refs=result_per_lang['gold'])
+        #     eval_result[lang] = eval_per_lang 
 
         if show_df_per_lang:
             display(pd.DataFrame(df_per_lang_rows))
@@ -893,7 +987,7 @@ class DatasetLanguage:
 
 def intervention_matrix(
     # property dataset
-    model, dataset_name, langs, max_samples, apply_template, split, 
+    model, dataset_name, langs, max_samples, apply_template, batch_size, split, 
     # property intervensi
     replace_method, replacer_tensor, lsn, operation_non_target, operation_target, range_layers,target_langs=None, #target_langs dalam lang nya sesuai yg ada di lsn[1]
     # property evaluasi
@@ -904,31 +998,31 @@ def intervention_matrix(
         if metrics == ["dod"]:
             df_int_matrix, gold_difference = HF_infer_dataset(
                 model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples,is_generate=is_generate,
-                apply_template=apply_template,
+                apply_template=apply_template,batch_size=batch_size,
                 intervention = False,
                 split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario="baseline", selected_langs=selected_langs)
         else:
             df_int_matrix = HF_infer_dataset(
                 model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples,is_generate=is_generate,
-                apply_template=apply_template,
+                apply_template=apply_template,batch_size=batch_size,
                 intervention = False,
                 split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario="baseline", selected_langs=selected_langs)
         # df_int_matrix = baseline_df
         # INTERVENTION PART
-        target_langs = target_langs if target_langs!= None else lsn_languages.get_all_idx()
-        for target_lang in target_langs:
-            intv_df = HF_infer_dataset(
-                model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
-                apply_template=apply_template,
-                intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
-                split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
-            print(f"df_int_matrix: {df_int_matrix}")
-            print(f"intv_df: {intv_df}")
-            assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
-            dfs = [df_int_matrix, intv_df]
-            print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
-            dfs = [df.set_index("lang") for df in dfs]
-            df_int_matrix = pd.concat(dfs, axis=1).reset_index()
+        # target_langs = target_langs if target_langs!= None else lsn_languages.get_all_idx()
+        # for target_lang in target_langs:
+        #     intv_df = HF_infer_dataset(
+        #         model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
+        #         apply_template=apply_template,batch_size=batch_size,
+        #         intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
+        #         split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
+        #     print(f"df_int_matrix: {df_int_matrix}")
+        #     print(f"intv_df: {intv_df}")
+        #     assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
+        #     dfs = [df_int_matrix, intv_df]
+        #     print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
+        #     dfs = [df.set_index("lang") for df in dfs]
+        #     df_int_matrix = pd.concat(dfs, axis=1).reset_index()
         return df_int_matrix
 
 
@@ -952,6 +1046,16 @@ def alter_name(operation_target, operation_non_target, replacer_filename=None):
 # selected langs is the lang initial, langs is the lang intervener
 # 'target_langs' HAS TO BE the same lang as 'langs' but langs is in dataset language code, 
 # target langs is INDEX OF THAT LANGUAGE IN LSN.
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -986,9 +1090,41 @@ parser.add_argument('--selected_langs', nargs='+', default=None)
 parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
 parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
 parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
+#MODIF
+# args = parser.parse_args()
+args, unknown = parser.parse_known_args()
+from argparse import Namespace
 
-args = parser.parse_args()
-# args, unknown = parser.parse_known_args()
+args = Namespace(
+    dataset_kaggle="inayarahmanisa/lsn-qwen05-flores",
+    lsn_filename="maplape.pt",
+    ld_filename="lang_dict",
+    dataset_kaggle_replacer="inayarahmanisa/activation-qwen05-flores",
+    replacer_filename="max.pt",
+    hf_token="***REMOVED***",
+    model_name="Qwen/Qwen2.5-0.5B-Instruct",
+    dataset_name="CohereLabs/include-lite-44",
+    split="test",
+    replace_method="percent",
+    operation_non_target=".1",
+    operation_target="=10",
+    metrics="acc",
+    langs=None,
+    selected_langs=["Indonesian", "Japanese"],
+    kaggle_dataname_to_save=None,
+    is_update=False,
+    parent_dir_to_save="",
+    max_samples=32,
+    show_df_per_lang=False,
+    range_layers=None,
+    target_langs=None,
+    apply_template=False,
+    batch_size = 16
+)
+#END MODIF
+
+
+
 from pprint import pprint
 pprint(vars(args))
 
@@ -1025,6 +1161,7 @@ matrix = intervention_matrix(
     langs=args.langs,
     max_samples=args.max_samples,
     apply_template=args.apply_template,
+    batch_size=args.batch_size,
     split=args.split,
     replace_method=args.replace_method,
     replacer_tensor = replacer_tensor,
@@ -1041,6 +1178,6 @@ matrix = intervention_matrix(
 path_res = f"{parent_dir}res"
 os.makedirs(path_res, exist_ok=True)
 matrix.to_csv(f"{path_res}/{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}.csv")
-
-save_to_kaggle(dataset_name=args.kaggle_dataname_to_save, data_dir=path_res, is_update=args.is_update)
+if args.kaggle_dataname_to_save:
+    save_to_kaggle(dataset_name=args.kaggle_dataname_to_save, data_dir=path_res, is_update=args.is_update)
 
