@@ -7,7 +7,7 @@ python get_activations.py  \
     --max_tokens_overzeros 100000 \
     --selected_langs "eng_Latn" "nld_Latn" "ind_Latn" "zsm_Latn" "vie_Latn" "jpn_Jpan" "zho_Hans" "fra_Latn" "por_Latn" "rus_Cyrl" "est_Latn" "hat_Latn" "ita_Latn" "quy_Latn" "swh_Latn" "tam_Taml" "tha_Thai" "tur_Latn" \
     --max_instances 1000 \
-    --batch_size 64 \
+    --batch_size 32 \
     --kaggle_dataname_to_save "activationxx-qwen05-neurons" \
     > qwen_mini_actxx.txt 2>&1
 # --debug \

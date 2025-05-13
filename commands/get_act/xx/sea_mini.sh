@@ -9,6 +9,7 @@ python get_activations.py  \
     --kaggle_dataname_to_save "activationxx-sea1-5-neurons" \
     --selected_langs "eng_Latn" "nld_Latn" "ind_Latn" "zsm_Latn" "vie_Latn" "jpn_Jpan" "zho_Hans" "fra_Latn" "por_Latn" "rus_Cyrl" "est_Latn" "hat_Latn" "ita_Latn" "quy_Latn" "swh_Latn" "tam_Taml" "tha_Thai" "tur_Latn" \
     --parent_dir_to_save "/workspace/" \
+    --batch_size 32 \
     > sea_mini_actxx.txt 2>&1
 # --is_update \
 # --debug \
