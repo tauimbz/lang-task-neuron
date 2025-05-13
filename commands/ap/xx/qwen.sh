@@ -7,5 +7,5 @@ python get_map_neurons.py  \
     --dataset_name_inf "flores" \
     --kaggle_dataname_to_save "lsnxx-qwen7-flores" \
     --threshold 0.99 0.95 0.90 0.3 \
-    --top_bottom_k 1000 \
+    --top_k 1644 \
     --is_update
