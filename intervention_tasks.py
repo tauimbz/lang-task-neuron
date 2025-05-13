@@ -945,6 +945,7 @@ parser.add_argument('--model_name', type=str, default=None)
 parser.add_argument('--dataset_name', type=str, default=None)
 parser.add_argument('--langs', nargs='+', default=None, help="langs of dataset to be intervened. for dod")
 parser.add_argument('--max_samples', type=int, default=None)
+parser.add_argument('--batch_size', type=int, default=None)
 parser.add_argument('--apply_template', action='store_true')
 parser.add_argument('--split', type=str, default="test")
 
