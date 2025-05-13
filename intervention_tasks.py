@@ -476,115 +476,6 @@ def calc_perplexity_answer(eval_type, prompt, continuation, model, is_generate=F
         print(f"perplexity: {perplexity}")
     return perplexity
     
-
-
-def HF_get_prompt_dataset(dataset_name, ds, data, base_lang=None):
-    """
-    Input:
-    - ds: return of load_dataset(), get special configuration for some dataset e.g intents_set. 
-        may not be used for other datasets
-    - data: data per row
-    
-    Output:
-    - prompt
-    """
-    prompt = ""
-    if dataset_name == "AmazonScience/massive":
-        # ds = load_dataset(dataset_name, lang, split="test")
-        intents = ds.features['intent'].names
-        scenarios = ds.features['scenario'].names
-        scenario = scenarios[data['scenario']]
-        intent_options = [intent[intent.find('_')+1:] for intent in intents if intent.startswith(scenario)]
-       
-        prompt = (
-            f"""
-            Instruction: Classify the intent of the following utterance.  
-            Utterance: {data['utt']}.  
-            Options: {scenario} {', '.join(intent_options)}. 
-            Intent:      
-            """
-            )
-    elif dataset_name == "facebook/xnli":
-        premise = data['premise'].lower()
-        hypothesis = data['hypothesis'].lower()
-        answer_options = ['entailment', 'neutral', 'contradiction']
-        prompt = (
-                f"Premise: {premise}. "
-                f"Hypothesis: {hypothesis}. "
-                f"Pick one of these that describes the relation of the Premise and Hypothesis: {', '.join(answer_options)}."
-                f"Answer:"
-                )
-    elif dataset_name == "Muennighoff/xwinograd":
-        sentence = data['sentence']
-        option1 = data['option1']
-        option2 = data['option2']
-        prompt = (
-            f"""
-            {sentence}
-            Who does '_' refer to? The answer should be one of '{option1}' or '{option2}'.\n
-            Answer:"""
-        )
-    elif dataset_name == "CohereLabs/include-lite-44":
-        option_a, option_b, option_c, option_d = tuple(data['choices'])
-        question = data['question']
-        correct_idx = data['answer']
-        choices = ['A', 'B', 'C', 'D'] 
-        target = f"{question.strip()}\nA. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}\nAnswer:"
-        prompt = (
-            f"""
-            {target}"""
-        )
-    elif dataset_name == "cambridgeltl/xcopa":
-        premise = data['premise']
-        choice1 = data['choice1']
-        choice2 = data['choice2']
-        question_type = data['question']
-        # prompt = (
-        #     f"""
-        #     Premise: {premise}
-        #     Choose the most appropriate {question_type}.
-        #     - {choice1} 
-        #     - {choice2}
-        #     """)
-
-        prompt = (
-            f"""
-            Premise: {premise}
-            I'm hesitating between the two options. Help me choose the {question_type}: 
-            - {choice1} 
-            - {choice2}
-            """)
-    elif dataset_name =="facebook/flores":
-        # print(data.keys())
-        # print([i for i in data.keys() if i.startswith("sentence_eng")])
-        base_lang_sentence = 'sentence_eng'
-        choice1 = [i for i in data.keys() if i.startswith(base_lang_sentence)]
-        choice2 = []
-        if len(choice1) == 0:
-            choice1 = [i for i in data.keys() if i.startswith("sentence")][0]
-            choice2 = [i for i in data.keys() if i.startswith("sentence")][0]
-        else:
-            choice1 = choice1[0]
-            choice2 = [i for i in data.keys() if i.startswith("sentence") and i != choice1][0]
-       
-    
-        prompt = (
-            f"""
-            - {choice1} 
-            - {choice2}
-            """)
-    elif dataset_name =="inayarhmns/MLAMA-dod":
-        prompt = (
-            f"""
-            {data['template']}
-            """)
-    else:
-        print("Dataset is not available yet!")
-        raise ValueError("Dataset is not available yet!")
-        
-    return prompt
-
-
 def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, dod_baselang= None, dod_languages=None):
     """
     Input:
@@ -856,11 +747,6 @@ def HF_infer_dataset(
             # print(f"data: {data}")
             # print(f"Eval_type: {eval_type}")
             clean_hooks(model)
-            # prompt = HF_get_prompt_dataset(dataset_name, ds, data)
-            # text = model.get_templated_prompt(prompt, apply_template)
-            # input_text_only = model.tokenizer(text, return_tensors="pt")["input_ids"].to(model.device)
-
-            
             if eval_type == "EVAL_TASK":
                 batched_prompts = []
                 batched_continuations = []

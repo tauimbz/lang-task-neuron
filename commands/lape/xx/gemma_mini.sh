@@ -1,9 +1,10 @@
 
-python lape.py  \
-    --in_kaggle \
-    --dataset_kaggle "inayarahmanisa/activationxx-gemma2-flores"\
-    --filename "oz_flores200_997_False" \
-    --model_name_inf "gemma2" \
-    --dataset_name_inf "flores" \
-    --kaggle_dataname_to_save "lsnxx-gemma2-flores" \
-    > gemma_mini_lapexx.txt 2>&1
+python overlap_neurons.py  \
+  --data_kaggle_result "inayarahmanisa/lsn2-sea1-5-flores" \
+  --lape_filename "sea1-5_flores" \
+  --res_filename "result_sea1-5_flores.pt" \
+  --n_layer 28 \
+  --model_name_inf "sea1-5" \
+  --dataset_name_inf "flores" \
+  --kaggle_dataname_to_save "lsn2-sea1-5-flores" \
+#   --maximum 675
