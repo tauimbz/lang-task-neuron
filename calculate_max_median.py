@@ -50,7 +50,7 @@ for i in tqdm(range(0, act_file.shape[0], batch_size)):
     median_val = median_val.reshape(batch.shape[0], args.n_layer, int(batch.shape[-1] / args.n_layer))
     median_vals_list.append(median_val)
 
-
+print("done calculating max and median")
 max_vals = torch.cat(max_vals_list, dim=0)
 median_vals = torch.cat(median_vals_list, dim=0)
 path_res = f"{parent_dir_to_save}res"
