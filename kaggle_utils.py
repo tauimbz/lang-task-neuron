@@ -9,7 +9,7 @@ from sklearn.metrics import average_precision_score
 import shutil
 import subprocess
 from pathlib import Path
-
+import requests
 
 
 kaggle_api_token = {
@@ -33,10 +33,25 @@ def download_from_kaggle(
     """
     dataset_name: is username/dataset_name like 'inayarahmanisa/testssssss'
     """
-    download_path = download_path if download_path else "data/"
-    api.dataset_download_file(dataset_name, file_name, path=download_path)
+    # download_path = download_path if download_path else "data/"
+    # api.dataset_download_file(dataset_name, file_name, path=download_path)
     # api.dataset_download_files(dataset_name, path=download_path if download_path else None, unzip=True)
+    headers = {
+        'User-Agent': 'Kaggle/1.5.12',
+    }
+    url = f"https://www.kaggle.com/api/v1/datasets/download/{dataset_name}/{file_name}"
+    auth = (kaggle_api_token['username'], kaggle_api_token['key'])
 
+    output_path = Path(download_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with requests.get(url, headers=headers, auth=auth, stream=True) as r:
+        r.raise_for_status()  # Throw error if not 200
+        with open(output_path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
+                if chunk:  # Filter out keep-alive chunks
+                    f.write(chunk)
+    # print(f"✅ Downloaded: {file_name}")
     print("Dataset downloaded and unzipped.")
 
 
