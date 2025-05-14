@@ -14,7 +14,7 @@ python intervention_tasks.py \
     --metrics "acc" \
     --kaggle_dataname_to_save "accxx-xwinograd-maplape" \
     --parent_dir_to_save "" \
-    --selected_langs "et" "ht" "id" "it" "qu" "sw" "ta" "th" "tr" "vi" "zh" \
+    --selected_langs "Dutch" "Indonesian" "Malay" "Vietnamese" "Japanese" "Chinese" "French" "Portuguese" "Russian" "Estonian" "Italian"  "Tamil" "Turkish" \
     --target_langs 0 7 5 8 9 6 \
     --is_update \
     --batch_size 6 \

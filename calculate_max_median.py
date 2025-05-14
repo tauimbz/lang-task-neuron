@@ -1,7 +1,7 @@
 import torch
 from kaggle_utils import *
 import argparse
-
+from tqdm import tqdm
 parser = argparse.ArgumentParser(description="Run the map function with specified parameters.")
 parser.add_argument("--in_kaggle", action='store_true', help="Whether the file is from Kaggle")
 parser.add_argument("--dataset_kaggle", type=str,  help="The dataset name in Kaggle, if not Kaggle then empty")
@@ -37,7 +37,7 @@ batch_size = 5
 max_vals_list = []
 median_vals_list = []
 
-for i in range(0, act_file.shape[0], batch_size):
+for i in tqdm(range(0, act_file.shape[0], batch_size)):
     batch = act_file[i:i + batch_size]
 
     

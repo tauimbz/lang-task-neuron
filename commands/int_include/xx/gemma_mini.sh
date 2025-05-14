@@ -18,3 +18,14 @@ python intervention_tasks.py \
     --is_update \
     --batch_size 8 \
     > gemma_mini_xwinogradxx.txt 2>&1
+
+
+ "eng_Latn" "nld_Latn" "ind_Latn" "zsm_Latn" "vie_Latn" "jpn_Jpan" "zho_Hans" "fra_Latn" "por_Latn" "rus_Cyrl" "est_Latn" "hat_Latn" "ita_Latn" "quy_Latn" "swh_Latn" "tam_Taml" "tha_Thai" "tur_Latn" 
+ 1 2 3 4 5 6 7 8 9 10 12 13 14 15 16
+ "Dutch" "Indonesian" "Malay" "Vietnamese" "Japanese" "Chinese" "French" "Portuguese" "Russian" "Estonian" "Italian"  "Tamil" "Turkish"
+
+ "English"
+"Haitian Creole"
+"Quechua"
+"Swahili"
+"Thai"
