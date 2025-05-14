@@ -17,5 +17,5 @@ python intervention_tasks.py \
     --selected_langs "Dutch" "Indonesian" "Malay" "Vietnamese" "Japanese" "Chinese" "French" "Portuguese" "Russian" "Estonian" "Italian"  "Tamil" "Turkish" \
     --target_langs 1 2 3 4 5 6 7 8 9 10 12 15 17 \
     --is_update \
-    --batch_size 3 \
+    --batch_size 1 \
     > qwen_mini_includexx.txt 2>&1
