@@ -32,12 +32,27 @@ parent_dir_to_save = args.parent_dir_to_save if args.parent_dir_to_save else ""
 download_from_kaggle(args.dataset_kaggle, args.filename)
 act_file = torch.load(f"data/{args.filename}", weights_only=True)
 
-max_vals, max_indices = act_file.max(dim=1)  
-max_vals = max_vals.reshape(act_file.shape[0], args.n_layer, int(act_file.shape[-1]/args.n_layer))
+batch_size = 128  
 
-median_vals, median_indices = act_file.median(dim=1)
-median_vals = median_vals.reshape(act_file.shape[0], args.n_layer, int(act_file.shape[-1]/args.n_layer))
+max_vals_list = []
+median_vals_list = []
 
+for i in range(0, act_file.shape[0], batch_size):
+    batch = act_file[i:i + batch_size]
+
+    
+    max_val, _ = batch.max(dim=1)
+    max_val = max_val.reshape(batch.shape[0], args.n_layer, int(batch.shape[-1] / args.n_layer))
+    max_vals_list.append(max_val)
+
+    
+    median_val, _ = batch.median(dim=1)
+    median_val = median_val.reshape(batch.shape[0], args.n_layer, int(batch.shape[-1] / args.n_layer))
+    median_vals_list.append(median_val)
+
+
+max_vals = torch.cat(max_vals_list, dim=0)
+median_vals = torch.cat(median_vals_list, dim=0)
 path_res = f"{parent_dir_to_save}res"
 os.makedirs(path_res, exist_ok=True)
 
