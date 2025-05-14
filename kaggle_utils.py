@@ -33,9 +33,10 @@ def download_from_kaggle(
     """
     dataset_name: is username/dataset_name like 'inayarahmanisa/testssssss'
     """
-    # download_path = download_path if download_path else "data/"
+    download_path = download_path if download_path else "data/"
     # api.dataset_download_file(dataset_name, file_name, path=download_path)
     # api.dataset_download_files(dataset_name, path=download_path if download_path else None, unzip=True)
+    print(f"download_path: {download_path}")
     headers = {
         'User-Agent': 'Kaggle/1.5.12',
     }
