@@ -32,7 +32,7 @@ parent_dir_to_save = args.parent_dir_to_save if args.parent_dir_to_save else ""
 download_from_kaggle(args.dataset_kaggle, args.filename)
 act_file = torch.load(f"data/{args.filename}", weights_only=True)
 
-batch_size = 128  
+batch_size = 1000  
 
 max_vals_list = []
 median_vals_list = []
