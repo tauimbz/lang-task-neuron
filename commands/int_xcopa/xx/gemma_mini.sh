@@ -6,7 +6,7 @@ python intervention_tasks.py \
     --replacer_filename "max.pt" \
     --hf_token "***REMOVED***" \
     --model_name "google/gemma-2-2b-it" \
-    --dataset_name "Muennighoff/xcopa" \
+    --dataset_name "cambridgeltl/xcopa" \
     --split test \
     --replace_method fixed \
     --operation_non_target ".1" \
