@@ -60,5 +60,5 @@ os.makedirs(path_res, exist_ok=True)
 torch.save(median_vals, f"{path_res}/median.pt")
 torch.save(max_vals, f"{path_res}/max.pt")
 
-
-save_to_kaggle(dataset_name=args.kaggle_dataname_to_save, data_dir=path_res, is_update=args.is_update)
+if args.kaggle_dataname_to_save:
+    save_to_kaggle(dataset_name=args.kaggle_dataname_to_save, data_dir=path_res, is_update=args.is_update)
