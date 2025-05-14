@@ -43,7 +43,7 @@ def download_from_kaggle(
     url = f"https://www.kaggle.com/api/v1/datasets/download/{dataset_name}/{file_name}"
     auth = (kaggle_api_token['username'], kaggle_api_token['key'])
 
-    output_path = Path(download_path)
+    output_path = Path(download_path) / file_name
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with requests.get(url, headers=headers, auth=auth, stream=True) as r:
