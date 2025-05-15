@@ -1,4 +1,4 @@
-python intervention_tasks.py \
+python intervention_dod.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-qwen7-flores" \
     --lsn_filename "qwen7_flores" \
     --ld_filename "lang_dict" \
@@ -14,5 +14,4 @@ python intervention_tasks.py \
     --parent_dir_to_save "" \
     --target_langs 0 7 5 8 9 6 \
     --is_update \
-    --batch_size 32 \
     > qwen_xwinogradxx.txt 2>&1
