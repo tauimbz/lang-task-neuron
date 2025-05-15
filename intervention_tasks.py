@@ -319,30 +319,44 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                             output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
                 
                 elif replace_method == "percent": 
-                    # if mode is percentile, we are not operating with replace value/factor anymore, but with that percentile
-                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
-                    if selected.numel() == 0:
-                        continue
-                    mean_value = output.quantile(replace_value_t/100)
-                    # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
                     
-                    if lang == target_lang:
-                        if operand_t == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value 
-                        elif operand_t == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value
+                    dims = lsn_lang[layer]  # [H']
+                    if dims.numel() == 0:
+                        continue
+
+                    for b in range(output.size(0)):  # Loop over batch
+                        mask_b = attn_mask[b]  # [T]
+                        valid_idx = mask_b.bool().nonzero(as_tuple=False).squeeze(1)  # [#valid_T]
+
+                        if valid_idx.numel() == 0:
+                            continue
+
+                        # Get only valid time steps and selected dims
+                        selected = output[b, valid_idx, :]  # [#valid_T, H']
+
+                        if selected.numel() == 0:
+                            continue
+
+                        flat = selected.flatten()
+                        k = max(int(flat.numel() * (replace_value_t / 100)), 1)
+                        percentile_val = flat.kthvalue(k).values
+
+                        if lang == target_lang:
+                            if operand_t == "*":
+                                output[b, valid_idx[:, None], dims] *= percentile_val
+                            elif operand_t == "=":
+                                output[b, valid_idx[:, None], dims] = percentile_val
+                            else:
+                                output[b, valid_idx[:, None], dims] += percentile_val
                         else:
-                            # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value)
-                    else:
-                        if operand_nt == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value
-                        elif operand_nt == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value
-                        elif operand_nt == ".":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
-                        else:
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value
+                            if operand_nt == "*":
+                                output[b, valid_idx[:, None], dims] *= percentile_val
+                            elif operand_nt == "=":
+                                output[b, valid_idx[:, None], dims] = percentile_val
+                            elif operand_nt == ".":
+                                pass
+                            else:
+                                output[b, valid_idx[:, None], dims] += percentile_val
     
                 elif replace_method == "max":
                     # print(f"max: ")
