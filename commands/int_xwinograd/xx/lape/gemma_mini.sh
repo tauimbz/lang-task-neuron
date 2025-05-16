@@ -14,7 +14,7 @@ python intervention_tasks.py \
     --metrics "acc" \
     --kaggle_dataname_to_save "accxx-xwinograd-lape" \
     --parent_dir_to_save "" \
-    --target_langs 0 7 5 8 9 6 \
+    --target_langs 1 2 3 4 10 11 12 13 14 15 16 17 \
     --is_update \
     --batch_size 4 \
     > gemma_mini_xwinogradxx.txt 2>&1
