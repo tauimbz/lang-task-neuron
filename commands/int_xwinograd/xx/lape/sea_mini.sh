@@ -10,7 +10,7 @@ python intervention_tasks.py \
     --split test \
     --replace_method fixed \
     --operation_non_target ".1" \
-    --operation_target "=10" \
+    --operation_target "=22" \
     --metrics "acc" \
     --kaggle_dataname_to_save "accxx-xwinograd-lape" \
     --parent_dir_to_save "" \
