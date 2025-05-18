@@ -541,7 +541,7 @@ def HF_get_prompt_dataset(dataset_name, ds, data, base_lang=None):
             - {choice1} 
             - {choice2}
             """)
-    elif dataset_name =="inayarhmns/MLAMA-dod":
+    elif dataset_name =="inayarhmns/MLAMA-dod-185":
         prompt = (
             f"""
             {data['template']}
