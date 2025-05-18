@@ -244,7 +244,7 @@ def get_neurons(
             dataset_instance = Xwinograd(dataset_name, ds)
         elif dataset_name.endswith("flores200"):
             dataset_instance = Flores(dataset_name, ds)
-        elif dataset_name.endswith("MLAMA-dod"):
+        elif dataset_name.endswith("MLAMA-dod-185"):
             dataset_instance = Mlama(dataset_name, ds)
         else:
             raise ValueError("Dataset is not available!")

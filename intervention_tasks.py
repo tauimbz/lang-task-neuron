@@ -550,7 +550,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         num_choices = 4
         choices = [choices for i in range(num_choices)]
         
-    elif dataset_name.endswith("MLAMA-dod"):
+    elif dataset_name.endswith("MLAMA-dod-185"):
         # print(f"dod_languages: {dod_languages}")
         base_lang_sub = f'sub_{dod_baselang}'
         base_lang_obj = f'obj_{dod_baselang}'

@@ -597,7 +597,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_gener
         correct_idx = doc_to_text(data)
         gold = answer_options[correct_idx]
         correct_sentence = choices[correct_idx]
-    elif dataset_name.endswith("MLAMA-dod"):
+    elif dataset_name.endswith("MLAMA-dod-185"):
         # print(f"dod_languages: {dod_languages}")
         base_lang_sub = f'sub_{dod_baselang}'
         base_lang_obj = f'obj_{dod_baselang}'
