@@ -732,7 +732,7 @@ def HF_infer_dataset(
         model, dataset_name, dataset_relations=None, langs=None, max_samples=None, is_generate=False,
         apply_template=True, 
         intervention = False, replace_method=None, replacer_tensor=None, lsn_langs = [], target_lang=None, operation_non_target="*1", operation_target="*1", range_layers=[1], lsn_languages={},
-        split="test", show_df_per_lang=False, metrics=None, scenario=None, selected_langs = None, gold_difference = None):
+        split="test", show_df_per_lang=False, metrics=None, scenario=None, selected_langs = None, gold_difference = None, target_langname=None):
     """
     model:InferenceModel
     intervention: list of languages want to be intervened
@@ -828,7 +828,8 @@ def HF_infer_dataset(
                     for key in non_int_dod[lang].keys():
                         non_int_dod[lang][key].append(dod_dict[key]) 
                 else:
-                    target_lang_dod = langs[target_lang]
+                    # target_lang_dod = langs[target_lang]
+                    target_lang_dod = target_langname
                     # print(f"target_lang_dod: {target_lang_dod}")
                     difference = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate=is_generate, dod_baselang=lang, dod_languages=[lang, target_lang_dod])
                     
@@ -916,12 +917,12 @@ def intervention_matrix(
         # df_int_matrix = baseline_df
         # INTERVENTION PART
         target_langs = target_langs if target_langs!= None else lsn_languages.get_all_idx()
-        for target_lang in target_langs:
+        for target_langname, target_lang in zip(langs, target_langs):
             intv_df = HF_infer_dataset(
                 model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
                 apply_template=apply_template,
                 intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
-                split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
+                split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference, target_langname=target_langname)
             print(f"df_int_matrix: {df_int_matrix}")
             print(f"intv_df: {intv_df}")
             assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"

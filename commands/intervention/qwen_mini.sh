@@ -16,7 +16,9 @@ python intervention_dod.py \
     --is_update \
     --target_langs 0 1 2 3 4 5 6 7 8 9 10 12 15 16 17   \
     --langs "en" "nl" "id" "ms" "vi" "ja" "zh" "fr" "pt" "ru" "et" "it" "ta" "th" "tr" \
-    --parent_dir_to_save "" 
+    --parent_dir_to_save "" \
+    --max_samples 2 
+
 # --show_df_per_lang false \
 # --range_layers None \
 # --target_langs None \
