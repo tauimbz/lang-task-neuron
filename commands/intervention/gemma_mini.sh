@@ -14,7 +14,9 @@ python intervention_dod.py \
     --metrics "dod" \
     --kaggle_dataname_to_save "dod-lape" \
     --is_update \
-    --parent_dir_to_save "" 
+    --langs "en" "nl" "id" "ms" "vi" "ja" "zh" "fr" "pt" "ru" "et" "ht" "it" "qu" "sw" "ta" "th" "tr" \
+    --parent_dir_to_save "" \
+    
 # --show_df_per_lang false \
 # --range_layers None \
 # --target_langs None \
