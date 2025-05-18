@@ -239,7 +239,7 @@ class Flores(Dataset):
 
 class Mlama(Dataset):
     def __init__(self, dataset_name, ds):
-        dataset_name = "inayarhmns/MLAMA-dod"
+        dataset_name = "inayarhmns/MLAMA-dod-185"
         super().__init__( dataset_name, ds)
     def get_index_start_end_prompt(self, infer_model, data, model_name, is_predict=True, take_whole=False):
         template, subjek, objek = data
