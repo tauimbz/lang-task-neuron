@@ -14,11 +14,12 @@ python intervention_dod.py \
     --metrics "dod" \
     --kaggle_dataname_to_save "dod-lape" \
     --is_update \
-    --langs "en" "nl" "id" "ms" "vi" "ja" "zh" "fr" "pt" "ru" "et" "ht" "it" "qu" "sw" "ta" "th" "tr" \
+    --langs "en" "nl" "id" "ms" "vi" "ja" "zh" "fr" "pt" "ru" "et" "it" "ta" "th" "tr" \
+    --target_langs 0 1 2 3 4 5 6 7 8 9 10 12 15 16 17   \
     --parent_dir_to_save ""
 # --show_df_per_lang false \
 # --range_layers None \
-# --target_langs None \
+
 # --max_samples 2 \
 # --apply_template false \
 
