@@ -1,6 +1,6 @@
 python intervention_dod.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-qwen05-flores" \
-    --lsn_filename "qwen05_flores" \
+    --lsn_filename "maplape.pt" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-qwen05-neurons" \
     --replacer_filename "max.pt" \
@@ -12,7 +12,7 @@ python intervention_dod.py \
     --operation_non_target ".1" \
     --operation_target "=10" \
     --metrics "dod" \
-    --kaggle_dataname_to_save "dod-lape" \
+    --kaggle_dataname_to_save "dod-aplape" \
     --is_update \
     --target_langs 0 1 2 3 4 5 6 7 8 9 10 12 15 16 17   \
     --langs "en" "nl" "id" "ms" "vi" "ja" "zh" "fr" "pt" "ru" "et" "it" "ta" "th" "tr" \

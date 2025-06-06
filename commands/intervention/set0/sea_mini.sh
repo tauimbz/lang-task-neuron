@@ -1,6 +1,6 @@
 python intervention_dod.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-sea1-5-flores" \
-    --lsn_filename "sea1-5_flores" \
+    --lsn_filename "maplape.pt" \
     --ld_filename "lang_dict" \
     --hf_token "***REMOVED***" \
     --model_name "SeaLLMs/SeaLLMs-v3-1.5B-Chat" \
@@ -10,7 +10,7 @@ python intervention_dod.py \
     --operation_non_target ".1" \
     --operation_target "=0" \
     --metrics "dod" \
-    --kaggle_dataname_to_save "dod-lape" \
+    --kaggle_dataname_to_save "dod-aplape" \
     --is_update \
     --target_langs 0 1 2 3 4 5 6 7 8 9 10 12 15 16 17   \
     --langs "en" "nl" "id" "ms" "vi" "ja" "zh" "fr" "pt" "ru" "et" "it" "ta" "th" "tr" \
