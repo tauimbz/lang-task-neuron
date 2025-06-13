@@ -10,3 +10,4 @@ accelerate
 pandas
 evaluate
 IPython
+sacrebleu

@@ -129,7 +129,7 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
     This changes all neuron lape values to be replaced_values but leave behind a desired target language. 
         replace_method: lape or all
         name (str): buat namain layer
-        lsn_langs: dict semua language lape
+        lsn_langs: dict semua language lapef
         target_lang: int index target_lang in lape. Has to exist in the lsn_langs and have the same index.
         operation: *10, =0, +5, etc
     """
@@ -582,6 +582,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         num_choices = 2
         choices = [choices for i in range(num_choices)]
     elif dataset_name == "facebook/flores":
+        print(f"data.keys: {data.keys()}")
         base_lang_sentence = 'sentence_eng'
         choice1 = [i for i in data.keys() if i.startswith(base_lang_sentence)]
         choice2 = []
@@ -719,6 +720,8 @@ def HF_infer_dataset(
         eval_type = "DOD_INT"
     elif "dod" in metrics and not intervention:
         eval_type = "DOD_NINT"
+    elif "bleu" in metrics:
+        eval_type = "TRANSLATE"
     if eval_type == "DOD_INT" and not gold_difference:
         raise ValueError("Gold diff must be provided")
     # langs = ['eng_Latn-jpn_Jpan','eng_Latn-por_Latn', 'eng_Latn-rus_Cyrl', 'eng_Latn-zho_Hans']
@@ -766,6 +769,55 @@ def HF_infer_dataset(
             # print(f"Eval_type: {eval_type}")
             clean_hooks(model)
             if eval_type == "EVAL_TASK":
+                batched_prompts = []
+                batched_continuations = []
+                batched_correct_idx = []
+                num_choices = None
+                # print(f"datas: {datas}")
+                for data in batch_data:
+                    # print(f"data: {data}")
+                    choices, target, is_generate, correct_idx, num_choices, _ = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
+                    # print(f"choices: {choices}\ntarget: {target}")
+                    assert len(choices) == len(target), "length choices and target must be the same!"
+                    batched_prompts.extend(choices)
+                    batched_continuations.extend(target)
+                    batched_correct_idx.append(correct_idx)
+                # print(f"batched_prompts: {batched_prompts}")
+                # print(f"batched_continuations: {batched_continuations}")
+                # print(f"batched_correct_idx: {batched_correct_idx}")
+                
+                assert num_choices, "num choices should not be None"
+                # print(f"len(batched_prompts): {len(batched_prompts)}")
+                # print(f"len(batched_continuations): {len(batched_continuations)}")
+                # total_len = [
+                #     len(
+                #         model.tokenizer(p + " " + c, return_tensors="pt")
+                #         .to(model.device)["input_ids"][0]
+                #     )
+                #     for p, c in zip(batched_prompts, batched_continuations)
+                # ]
+                # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
+                input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
+                if intervention:
+                    # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
+                    clean_hooks(model)
+                    for i in (range_layers):
+                        mlp = model.model.model.layers[i].mlp
+                        handlers.append(mlp.act_fn.register_forward_hook(
+                            set_activation_mlp_v2(
+                                replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
+                                target_lang=target_lang, operation_non_target=operation_non_target, 
+                                operation_target=operation_target, attn_mask=attn_mask)))
+                log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
+                log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
+                predictions = log_probs.argmax(axis=1)
+                result_per_lang['pred'].extend(predictions)
+                result_per_lang['gold'].extend(batched_correct_idx)
+              
+            
+
+
+            if eval_type == "TRANSLATE":
                 batched_prompts = []
                 batched_continuations = []
                 batched_correct_idx = []
