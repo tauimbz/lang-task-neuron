@@ -181,10 +181,10 @@ alpha = args.alpha if args.alpha else 2
 lsn = visualize_overlap(num_lang, lsn, lang_dict=ld, alpha=alpha, save=args.save)
 parent_dir = args.parent_dir_to_save
 path_res = f"{parent_dir}res/raw_act/{model_name_inf}"
+os.makedirs(path_res, exist_ok=True)
 
 torch.save(lsn, f"{path_res}/raw_act_lsn_{model_name_inf}.pt")
 
-os.makedirs(path_res, exist_ok=True)
 if args.kaggle_dataname_to_save:
     save_to_kaggle(dataset_name=args.kaggle_dataname_to_save, data_dir=path_res, is_update=True, subdir_name="")
 
