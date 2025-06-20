@@ -223,7 +223,6 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                     if selected.numel() == 0:
                         continue
                     mean_value = output.std()
-                    # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
                     
                     if lang == target_lang:
                         if operand_t == "*":
@@ -249,7 +248,6 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                     q1 = output.quantile(0.25)
                     q3 = output.quantile(0.75)
                     mean_value = q3 - q1
-                    # print(output[0, start_id_to_intv:, lsn_lang[layer]].numel())
                     
                     if lang == target_lang:
                         if operand_t == "*":
@@ -257,7 +255,6 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                         elif operand_t == "=":
                             output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
                         else:
-                            # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
                             output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
                     else:
                         if operand_nt == "*":
@@ -489,7 +486,58 @@ def calc_perplexity_answer(eval_type, prompt, continuation, model, is_generate=F
     if is_generate:
         print(f"perplexity: {perplexity}")
     return perplexity
-    
+
+def calc_perplexity_batch(
+    eval_type: str,
+    prompts: List[str],
+    continuations: List[str],
+    model,
+    is_generate: bool = False
+) -> List[float]:
+    perplexities = []
+
+    if eval_type == "EVAL_PPL_FULL":
+        sentences = [p + " " + c for p, c in zip(prompts, continuations)]
+        inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True).to(model.device)
+        input_ids = inputs.input_ids
+        attention_mask = inputs.attention_mask
+
+        with torch.no_grad():
+            outputs = model.model(input_ids=input_ids, attention_mask=attention_mask, labels=input_ids)
+            loss = outputs.loss  # Mean loss across all tokens and batch
+            # Need per-example loss, so we manually calculate it below
+
+            # Compute per-token loss
+            logits = outputs.logits  # (batch_size, seq_len, vocab_size)
+            shift_logits = logits[:, :-1, :].contiguous()
+            shift_labels = input_ids[:, 1:].contiguous()
+            shift_mask = attention_mask[:, 1:].contiguous()
+
+            loss_fct = torch.nn.CrossEntropyLoss(reduction='none')
+            per_token_loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+            per_token_loss = per_token_loss.view(shift_labels.size())
+
+            # Sum losses and divide by number of tokens per example
+            token_sums = per_token_loss.sum(dim=1)
+            token_counts = shift_mask.sum(dim=1)
+            ppl_per_example = torch.exp(token_sums / token_counts)
+
+            perplexities = ppl_per_example.tolist()
+
+    else:
+        # Unbatched fallback for non-EVAL_PPL_FULL modes
+        for prompt, continuation in zip(prompts, continuations):
+            log_prob = calculate_logprob(model, prompt, continuation)
+            num_tokens = len(model.tokenizer(continuation, return_tensors="pt").input_ids[0])
+            perplexity = math.exp(-log_prob / num_tokens)
+            perplexities.append(perplexity)
+
+    if is_generate:
+        for i, ppl in enumerate(perplexities):
+            print(f"[{i}] perplexity: {ppl:.4f}")
+    return perplexities
+
+
 def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, dod_baselang= None, dod_languages=None):
     """
     Input:
@@ -814,10 +862,8 @@ def HF_infer_dataset(
                 result_per_lang['pred'].extend(predictions)
                 result_per_lang['gold'].extend(batched_correct_idx)
               
-            
 
-
-            if eval_type == "TRANSLATE":
+            if eval_type == "TRANSLATE": #belum selesai sampai sini
                 batched_prompts = []
                 batched_continuations = []
                 batched_correct_idx = []
@@ -864,11 +910,60 @@ def HF_infer_dataset(
                 result_per_lang['gold'].extend(batched_correct_idx)
                 
             # if eval_type.startswith("EVAL_PPL"):
+            #     eval_type, choices[correct_idx], target, is_generate
             #     perplexity = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate=is_generate)
+            #     perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
             #     result_per_lang['gold'].append(perplexity)
             #     if show_df_per_lang:
             #         df_per_lang_rows = HF_make_df_per_lang(df_per_lang_rows, prompt, eval_type, gold_log_prob=perplexity)
+            
+            if eval_type == "EVAL_PPL":
+                batched_prompts = []
+                batched_continuations = []
+                batched_correct_idx = []
+                num_choices = None
+                # print(f"datas: {datas}")
+                for data in batch_data:
+                    # print(f"data: {data}")
+                    eval_type, choices[correct_idx], target, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
+                    # print(f"choices: {choices}\ntarget: {target}")
+                    assert len(choices) == len(target), "length choices and target must be the same!"
+                    batched_prompts.extend(choices)
+                    batched_continuations.extend(target)
+                    batched_correct_idx.append(correct_idx)
+                # print(f"batched_prompts: {batched_prompts}")
+                # print(f"batched_continuations: {batched_continuations}")
+                # print(f"batched_correct_idx: {batched_correct_idx}")
                 
+                assert num_choices, "num choices should not be None"
+                # print(f"len(batched_prompts): {len(batched_prompts)}")
+                # print(f"len(batched_continuations): {len(batched_continuations)}")
+                # total_len = [
+                #     len(
+                #         model.tokenizer(p + " " + c, return_tensors="pt")
+                #         .to(model.device)["input_ids"][0]
+                #     )
+                #     for p, c in zip(batched_prompts, batched_continuations)
+                # ]
+                # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
+                input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
+                if intervention:
+                    # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
+                    clean_hooks(model)
+                    for i in (range_layers):
+                        mlp = model.model.model.layers[i].mlp
+                        handlers.append(mlp.act_fn.register_forward_hook(
+                            set_activation_mlp_v2(
+                                replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
+                                target_lang=target_lang, operation_non_target=operation_non_target, 
+                                operation_target=operation_target, attn_mask=attn_mask)))
+                perplexity_gold = calc_perplexity_batch(eval_type, choices[correct_idx], target, model, is_generate)
+                # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
+                # log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
+                # log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
+                # predictions = log_probs.argmax(axis=1)
+                result_per_lang['pred'].extend(predictions)
+                result_per_lang['gold'].extend(batched_correct_idx)
             # if eval_type.startswith("DOD"):
             #     if eval_type == "DOD_NINT":
                     
@@ -899,9 +994,9 @@ def HF_infer_dataset(
             eval_result[lang] = eval_per_lang
             
 
-        # if eval_type.startswith("EVAL_PPL"):
-        #     eval_per_lang = eval_ppl(result_per_lang['gold'])
-        #     eval_result[lang] = eval_per_lang
+        if eval_type.startswith("EVAL_PPL"):
+            eval_per_lang = eval_ppl(result_per_lang['gold'])
+            eval_result[lang] = eval_per_lang
 
         # if eval_type.startswith("DOD_NINT"):
         #     eval_result[lang] = 0
