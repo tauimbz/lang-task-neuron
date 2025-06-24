@@ -1,6 +1,6 @@
 python intervention_tasks.py \
-    --dataset_kaggle "inayarahmanisa/lsnxx-gemma2-flores" \
-    --lsn_filename "gemma2_flores" \
+    --dataset_kaggle "inayarahmanisa/activationxx-gemma2-neurons" \
+    --lsn_filename "raw_act_lsn_gemma2.pt" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-gemma2-neurons" \
     --replacer_filename "max.pt" \
@@ -12,9 +12,9 @@ python intervention_tasks.py \
     --operation_non_target ".1" \
     --operation_target "=22" \
     --metrics "acc" \
-    --kaggle_dataname_to_save "accxx-xwinograd-lape" \
+    --kaggle_dataname_to_save "accxx-xwinograd-raw" \
     --parent_dir_to_save "" \
-    --target_langs 1 2 3 4 10 11 12 13 14 15 16 17 \
+    --target_langs 0 7 5 8 9 6 \
     --is_update \
     --batch_size 4 \
     > gemma_mini_xwinogradxx.txt 2>&1
