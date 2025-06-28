@@ -1,6 +1,6 @@
 python intervention_dod.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-gemma2-flores" \
-    --lsn_filename "maplape.pt" \
+    --lsn_filename "map_t354_gemma2_flores.pt" \
     --ld_filename "lang_dict" \
     --hf_token "***REMOVED***" \
     --model_name "google/gemma-2-2b-it" \
@@ -10,7 +10,7 @@ python intervention_dod.py \
     --operation_non_target ".1" \
     --operation_target "+1" \
     --metrics "dod" \
-    --kaggle_dataname_to_save "dod-aplape" \
+    --kaggle_dataname_to_save "dod-ap" \
     --is_update \
     --target_langs 0 1 2 3 4 5 6 7 8 9 10 12 15 16 17   \
     --langs "en" "nl" "id" "ms" "vi" "ja" "zh" "fr" "pt" "ru" "et" "it" "ta" "th" "tr" \
