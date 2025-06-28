@@ -1,7 +1,7 @@
 python intervention_dod.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-qwen05-flores" \
     --lsn_filename "map_t550_qwen05_flores.pt" \
-    --ld_filename "ld_flores200" \
+    --ld_filename "lang_dict" \
     --hf_token "***REMOVED***" \
     --model_name "Qwen/Qwen2.5-0.5B-Instruct" \
     --dataset_name "inayarhmns/MLAMA-dod-185" \
