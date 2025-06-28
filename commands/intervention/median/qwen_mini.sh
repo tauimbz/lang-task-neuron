@@ -1,5 +1,5 @@
 python intervention_dod.py \
-    --dataset_kaggle "inayarahmanisa/activationxx-qwen05-neurons" \
+    --dataset_kaggle "inayarahmanisa/lsnxx-qwen05-flores" \
     --lsn_filename "raw_act_lsn_qwen05.pt" \
     --ld_filename "ld_flores200" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-qwen05-neurons" \
