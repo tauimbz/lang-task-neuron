@@ -1194,7 +1194,16 @@ target_langs = args.target_langs if args.target_langs else Languages_lape.get_al
 replacer_tensor = None
 if args.dataset_kaggle_replacer:
     download_from_kaggle(args.dataset_kaggle_replacer, args.replacer_filename)
-    replacer_tensor = torch.load(f"data/{args.replacer_filename}", weights_only=True).to(model.device)
+    # replacer_tensor = torch.load(f"data/{args.replacer_filename}", map_location='cpu')
+    replacer_tensor_cpu = torch.load(f"data/{args.replacer_filename}", map_location='cpu')
+
+    replacer_tensor = torch.empty_like(replacer_tensor, device='cuda')
+
+    chunk_size = 800
+    for i in range(0, replacer_tensor.size(0), chunk_size):
+        end = min(i + chunk_size, replacer_tensor.size(0))
+        replacer_tensor[i:end] = replacer_tensor[i:end].to('cuda')
+
 
 matrix = intervention_matrix(
     model=model,
