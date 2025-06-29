@@ -16,5 +16,5 @@ python3 intervention_tasks.py \
     --parent_dir_to_save "" \
     --target_langs 0 7 5 8 9 6 \
     --is_update \
-    --batch_size 32 \
+    --batch_size 4 \
     > qwen_xwinogradxx.txt 2>&1
