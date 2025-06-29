@@ -1,4 +1,4 @@
-python intervention_tasks.py \
+python3 intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-sea1-5-flores" \
     --lsn_filename "map_t1085_sea1-5_flores.pt" \
     --ld_filename "lang_dict" \

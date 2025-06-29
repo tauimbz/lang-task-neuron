@@ -1,4 +1,4 @@
-python intervention_tasks.py \
+python3 intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-gemma2-flores" \
     --lsn_filename "map_t354_gemma2_flores.pt" \
     --ld_filename "lang_dict" \
