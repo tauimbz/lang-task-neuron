@@ -1,7 +1,7 @@
 python intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-qwen05-flores" \
     --lsn_filename "map_t550_qwen05_flores.pt" \
-    --ld_filename "ld_flores200" \
+    --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-qwen05-neurons" \
     --replacer_filename "max.pt" \
     --hf_token "***REMOVED***" \
