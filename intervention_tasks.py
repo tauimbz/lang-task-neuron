@@ -1197,7 +1197,7 @@ if args.dataset_kaggle_replacer:
     # replacer_tensor = torch.load(f"data/{args.replacer_filename}", map_location='cpu')
     replacer_tensor_cpu = torch.load(f"data/{args.replacer_filename}", map_location='cpu')
 
-    replacer_tensor = torch.empty_like(replacer_tensor, device='cuda')
+    replacer_tensor = torch.empty_like(replacer_tensor_cpu, device='cuda')
 
     chunk_size = 800
     for i in range(0, replacer_tensor.size(0), chunk_size):
