@@ -809,7 +809,7 @@ def HF_infer_dataset(
         for start_idx in tqdm(range(0, max_samples, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
             # print(f"max_samples: {max_samples}")
             end_idx = min(start_idx + batch_size, max_samples)
-            # print(f"processing data {start_idx} to {end_idx}")
+            print(f"processing data {start_idx} to {end_idx}")
             batch_data = ds.select(list(range(start_idx, end_idx)))
             # print(f"processing data {start_idx} to {end_idx}")
             # samples += 1
@@ -925,8 +925,8 @@ def HF_infer_dataset(
                 # print(f"datas: {datas}")
                 for data in batch_data:
                     # print(f"data: {data}")
-                    eval_type, choices[correct_idx], target, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
-                    # print(f"choices: {choices}\ntarget: {target}")
+                    eval_type, choices, target, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
+                    print(f"choices: {choices}\ntarget: {target}")
                     assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.extend(choices)
                     batched_continuations.extend(target)
@@ -957,7 +957,8 @@ def HF_infer_dataset(
                                 replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
-                perplexity_gold = calc_perplexity_batch(eval_type, choices[correct_idx], target, model, is_generate)
+                perplexity_gold = calc_perplexity_batch(eval_type, batched_prompts, batched_continuations, model, is_generate)
+                print(perplexity_gold)
                 # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
                 # log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
                 # log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
