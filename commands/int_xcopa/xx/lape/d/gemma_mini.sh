@@ -16,4 +16,4 @@ python intervention_tasks.py \
     --target_langs 10 11 2 12 13 14 15 16 17 4 6 \
     --is_update \
     --batch_size 6 \
-    > gemma_mini_xcopaxx.txt 2>&1
+# > gemma_mini_xcopaxx.txt 2>&1

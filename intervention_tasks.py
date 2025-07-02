@@ -962,8 +962,8 @@ def HF_infer_dataset(
                 # log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
                 # log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
                 # predictions = log_probs.argmax(axis=1)
-                result_per_lang['pred'].extend(predictions)
-                result_per_lang['gold'].extend(batched_correct_idx)
+                # result_per_lang['pred'].extend(predictions)
+                result_per_lang['gold'].extend(perplexity_gold)
             # if eval_type.startswith("DOD"):
             #     if eval_type == "DOD_NINT":
                     
