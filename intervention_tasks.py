@@ -916,7 +916,7 @@ def HF_infer_dataset(
             #     result_per_lang['gold'].append(perplexity)
             #     if show_df_per_lang:
             #         df_per_lang_rows = HF_make_df_per_lang(df_per_lang_rows, prompt, eval_type, gold_log_prob=perplexity)
-            
+            print(f"eval_type: {eval_type}")
             if eval_type == "EVAL_PPL":
                 batched_prompts = []
                 batched_continuations = []
