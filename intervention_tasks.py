@@ -425,7 +425,7 @@ def calculate_logprob(model, prompt: str, continuation: str, is_generate=False )
     # total_log_prob = np.array(total_log_prob).reshape(len(prompt), 4)
     return total_log_prob
 
-def tokenize_batch(model, prompts: list[str], continuations: list[str]):
+def tokenize_batch(model, prompts: list[str], continuations: list[str]=None):
     if continuations:
         assert len(prompts) == len(continuations), "Mismatch between prompts and continuations"
     inputs = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
