@@ -921,7 +921,7 @@ def HF_infer_dataset(
                 batched_prompts = []
                 batched_continuations = []
                 batched_correct_idx = []
-                num_choices = None
+                # num_choices = None
                 print(f"batch_data: {batch_data}")
                 for data in batch_data:
                     # print(f"data: {data}")
@@ -935,7 +935,7 @@ def HF_infer_dataset(
                 # print(f"batched_continuations: {batched_continuations}")
                 # print(f"batched_correct_idx: {batched_correct_idx}")
                 
-                assert num_choices, "num choices should not be None"
+                # assert num_choices, "num choices should not be None"
                 # print(f"len(batched_prompts): {len(batched_prompts)}")
                 # print(f"len(batched_continuations): {len(batched_continuations)}")
                 # total_len = [
