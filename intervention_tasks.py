@@ -928,8 +928,8 @@ def HF_infer_dataset(
                     eval_type, choices, target, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
                     print(f"choices: {choices}\ntarget: {target}")
                     # assert len(choices) == len(target), "length choices and target must be the same!"
-                    batched_prompts.extend(choices)
-                    batched_continuations.extend(target)
+                    batched_prompts.append(choices)
+                    batched_continuations.append(target)
                     # batched_correct_idx.append(correct_idx)
                 # print(f"batched_prompts: {batched_prompts}")
                 # print(f"batched_continuations: {batched_continuations}")
