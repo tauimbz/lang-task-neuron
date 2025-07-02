@@ -922,7 +922,7 @@ def HF_infer_dataset(
                 batched_continuations = []
                 batched_correct_idx = []
                 num_choices = None
-                # print(f"datas: {datas}")
+                print(f"batch_data: {batch_data}")
                 for data in batch_data:
                     # print(f"data: {data}")
                     eval_type, choices, target, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
