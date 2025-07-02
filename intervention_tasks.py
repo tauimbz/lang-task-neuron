@@ -946,6 +946,8 @@ def HF_infer_dataset(
                 #     for p, c in zip(batched_prompts, batched_continuations)
                 # ]
                 # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
+                print(f"batched_prompts: {batched_prompts}, {len(batched_prompts)}")
+                print(f"batched_continuations: {batched_continuations}, {len(batched_continuations)}")
                 input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
                 print(f"input_ids: {input_ids}")
                 print(f"attn_mask: {attn_mask}")
