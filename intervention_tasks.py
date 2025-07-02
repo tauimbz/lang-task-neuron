@@ -491,8 +491,8 @@ def calc_perplexity_answer(eval_type, prompt, continuation, model, is_generate=F
 def calc_perplexity_batch(
     eval_type: str,
     prompts: List[str],
-    continuations: List[str],
-    model,
+    continuations: List[str]=None,
+    model=None,
     is_generate: bool = False
 ) -> List[float]:
     perplexities = []
@@ -963,7 +963,7 @@ def HF_infer_dataset(
                                 replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
-                perplexity_gold = calc_perplexity_batch(eval_type, batched_prompts, batched_continuations, model, is_generate)
+                perplexity_gold = calc_perplexity_batch(eval_type, batched_prompts, model=model, is_generate=is_generate)
                 print(perplexity_gold)
                 # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
                 # log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
