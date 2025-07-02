@@ -930,7 +930,7 @@ def HF_infer_dataset(
                     # assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.extend(choices)
                     batched_continuations.extend(target)
-                    batched_correct_idx.append(correct_idx)
+                    # batched_correct_idx.append(correct_idx)
                 # print(f"batched_prompts: {batched_prompts}")
                 # print(f"batched_continuations: {batched_continuations}")
                 # print(f"batched_correct_idx: {batched_correct_idx}")
