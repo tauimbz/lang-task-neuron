@@ -712,7 +712,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         # assert len(pred_log_prob) == 3
         # assert len(gold_log_prob) == 2
         # return option_log_probs, pred_log_prob, gold_log_prob
-    elif eval_type.startswith("EVAL_PPL"):
+    elif eval_type.startswith("EVAL_PPL_FULL"):
         assert correct_sentence
         return eval_type, choices[correct_idx], target, is_generate
         # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
@@ -727,7 +727,7 @@ def HF_make_df_per_lang(rows, prompt, eval_type, option_log_probs=None, pred_log
             "pred_logprobs": pred_log_prob,
             "gold_logprobs": gold_log_prob
         }  
-    elif eval_type.startswith("EVAL_PPL"):
+    elif eval_type.startswith("EVAL_PPL_FULL"):
         row = {
                 "prompt": prompt,
                 "perplexity": gold_log_prob
@@ -916,8 +916,8 @@ def HF_infer_dataset(
             #     result_per_lang['gold'].append(perplexity)
             #     if show_df_per_lang:
             #         df_per_lang_rows = HF_make_df_per_lang(df_per_lang_rows, prompt, eval_type, gold_log_prob=perplexity)
-            print(f"eval_type: {eval_type}")
-            if eval_type == "EVAL_PPL":
+            # print(f"eval_type: {eval_type}")
+            if eval_type == "EVAL_PPL_FULL":
                 batched_prompts = []
                 batched_continuations = []
                 batched_correct_idx = []
@@ -995,7 +995,7 @@ def HF_infer_dataset(
             eval_result[lang] = eval_per_lang
             
 
-        if eval_type.startswith("EVAL_PPL"):
+        if eval_type.startswith("EVAL_PPL_FULL"):
             eval_per_lang = eval_ppl(result_per_lang['gold'])
             eval_result[lang] = eval_per_lang
 
