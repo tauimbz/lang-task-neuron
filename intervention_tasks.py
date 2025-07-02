@@ -949,8 +949,8 @@ def HF_infer_dataset(
                 print(f"batched_prompts: {batched_prompts}, {len(batched_prompts)}")
                 print(f"batched_continuations: {batched_continuations}, {len(batched_continuations)}")
                 input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
-                print(f"input_ids: {input_ids}")
-                print(f"attn_mask: {attn_mask}")
+                print(f"input_ids shape: {input_ids.shape}")
+                print(f"attn_mask shape: {attn_mask.shape}")
 
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
