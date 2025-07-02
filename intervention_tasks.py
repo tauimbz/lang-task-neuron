@@ -426,7 +426,8 @@ def calculate_logprob(model, prompt: str, continuation: str, is_generate=False )
     return total_log_prob
 
 def tokenize_batch(model, prompts: list[str], continuations: list[str]):
-    assert len(prompts) == len(continuations), "Mismatch between prompts and continuations"
+    if continuations:
+        assert len(prompts) == len(continuations), "Mismatch between prompts and continuations"
     inputs = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
 
     # Tokenize all inputs with padding
@@ -497,7 +498,7 @@ def calc_perplexity_batch(
     perplexities = []
 
     if eval_type == "EVAL_PPL_FULL":
-        sentences = [p + " " + c for p, c in zip(prompts, continuations)]
+        sentences = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
         inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True).to(model.device)
         input_ids = inputs.input_ids
         attention_mask = inputs.attention_mask
@@ -929,7 +930,7 @@ def HF_infer_dataset(
                     print(f"choices: {choices}\ntarget: {target}")
                     # assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.append(choices)
-                    batched_continuations.append(target)
+                    #batched_continuations.append(target)
                     # batched_correct_idx.append(correct_idx)
                 # print(f"batched_prompts: {batched_prompts}")
                 # print(f"batched_continuations: {batched_continuations}")
@@ -947,8 +948,8 @@ def HF_infer_dataset(
                 # ]
                 # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
                 print(f"batched_prompts: {batched_prompts}, {len(batched_prompts)}")
-                print(f"batched_continuations: {batched_continuations}, {len(batched_continuations)}")
-                input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
+                #print(f"batched_continuations: {batched_continuations}, {len(batched_continuations)}")
+                input_ids, attn_mask = tokenize_batch(model, batched_prompts)
                 print(f"input_ids shape: {input_ids.shape}")
                 print(f"attn_mask shape: {attn_mask.shape}")
 
