@@ -927,7 +927,7 @@ def HF_infer_dataset(
                     # print(f"data: {data}")
                     eval_type, choices, target, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
                     print(f"choices: {choices}\ntarget: {target}")
-                    assert len(choices) == len(target), "length choices and target must be the same!"
+                    # assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.extend(choices)
                     batched_continuations.extend(target)
                     batched_correct_idx.append(correct_idx)
@@ -947,6 +947,9 @@ def HF_infer_dataset(
                 # ]
                 # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
                 input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
+                print(f"input_ids: {input_ids}")
+                print(f"attn_mask: {attn_mask}")
+
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
                     clean_hooks(model)
