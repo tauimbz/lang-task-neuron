@@ -428,8 +428,10 @@ def calculate_logprob(model, prompt: str, continuation: str, is_generate=False )
 def tokenize_batch(model, prompts: list[str], continuations: list[str]=None):
     if continuations:
         assert len(prompts) == len(continuations), "Mismatch between prompts and continuations"
-    inputs = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
-
+    if continuations:
+        inputs = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
+    else:
+        inputs=prompts
     # Tokenize all inputs with padding
     encoding = model.tokenizer(inputs, return_tensors="pt", padding=True)
     input_ids = encoding["input_ids"].to(model.device)
@@ -498,7 +500,12 @@ def calc_perplexity_batch(
     perplexities = []
 
     if eval_type == "EVAL_PPL_FULL":
-        sentences = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
+        sentences=[]
+        if continuations:
+            sentences = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
+        else:
+            sentences=prompts
+        # sentences = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
         inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True).to(model.device)
         input_ids = inputs.input_ids
         attention_mask = inputs.attention_mask
