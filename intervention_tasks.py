@@ -1009,7 +1009,8 @@ def HF_infer_dataset(
             
 
         if eval_type.startswith("EVAL_PPL_FULL"):
-            print(f"len result_per_lang['gold']: {result_per_lang['gold']}")
+            print(f"len result_per_lang['gold']: {len(result_per_lang['gold'])}")
+            print(f"result_per_lang['gold']: {result_per_lang['gold']}")
             eval_per_lang = eval_ppl(result_per_lang['gold'])
             eval_result[lang] = eval_per_lang
 
