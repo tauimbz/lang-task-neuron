@@ -417,7 +417,7 @@ def calculate_logprob(model, prompt: str, continuation: str, is_generate=False )
 
     total_log_prob = token_log_probs.sum().item()
     if is_generate:
-        print(f"prompt: {prompt}")
+        # print(f"prompt: {prompt}")
         token_log_probs = token_log_probs.squeeze().tolist()
         for i, logp in enumerate(token_log_probs):
             print(f"Token {i}: log_prob = {logp:.4f}, perplexity = {math.exp(-logp):.4f}")
@@ -638,7 +638,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         num_choices = 2
         choices = [choices for i in range(num_choices)]
     elif dataset_name == "facebook/flores":
-        print(f"data.keys: {data.keys()}")
+        # print(f"data.keys: {data.keys()}")
         base_lang_sentence = 'sentence_eng'
         choice1 = [i for i in data.keys() if i.startswith(base_lang_sentence)]
         choice2 = []
@@ -817,7 +817,7 @@ def HF_infer_dataset(
         for start_idx in tqdm(range(0, max_samples, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
             # print(f"max_samples: {max_samples}")
             end_idx = min(start_idx + batch_size, max_samples)
-            print(f"processing data {start_idx} to {end_idx}")
+            # print(f"processing data {start_idx} to {end_idx}")
             batch_data = ds.select(list(range(start_idx, end_idx)))
             # print(f"processing data {start_idx} to {end_idx}")
             # samples += 1
@@ -930,11 +930,11 @@ def HF_infer_dataset(
                 batched_continuations = []
                 batched_correct_idx = []
                 # num_choices = None
-                print(f"batch_data: {batch_data}")
+                # print(f"batch_data: {batch_data}")
                 for data in batch_data:
                     # print(f"data: {data}")
                     eval_type, choices, target, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
-                    print(f"choices: {choices}\ntarget: {target}")
+                    # print(f"choices: {choices}\ntarget: {target}")
                     # assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.append(choices)
                     #batched_continuations.append(target)
@@ -954,11 +954,11 @@ def HF_infer_dataset(
                 #     for p, c in zip(batched_prompts, batched_continuations)
                 # ]
                 # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
-                print(f"batched_prompts: {batched_prompts}, {len(batched_prompts)}")
+                # print(f"batched_prompts: {batched_prompts}, {len(batched_prompts)}")
                 #print(f"batched_continuations: {batched_continuations}, {len(batched_continuations)}")
                 input_ids, attn_mask = tokenize_batch(model, batched_prompts)
-                print(f"input_ids shape: {input_ids.shape}")
-                print(f"attn_mask shape: {attn_mask.shape}")
+                # print(f"input_ids shape: {input_ids.shape}")
+                # print(f"attn_mask shape: {attn_mask.shape}")
 
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
@@ -971,7 +971,7 @@ def HF_infer_dataset(
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
                 perplexity_gold = calc_perplexity_batch(eval_type, batched_prompts, model=model, is_generate=is_generate)
-                print(perplexity_gold)
+                # print(perplexity_gold)
                 # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
                 # log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
                 # log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
@@ -1009,6 +1009,7 @@ def HF_infer_dataset(
             
 
         if eval_type.startswith("EVAL_PPL_FULL"):
+            print(f"len result_per_lang['gold']: {result_per_lang['gold']}")
             eval_per_lang = eval_ppl(result_per_lang['gold'])
             eval_result[lang] = eval_per_lang
 
@@ -1080,11 +1081,11 @@ def intervention_matrix(
                 apply_template=apply_template,batch_size=batch_size,
                 intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
                 split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
-            print(f"df_int_matrix: {df_int_matrix}")
-            print(f"intv_df: {intv_df}")
+            # print(f"df_int_matrix: {df_int_matrix}")
+            # print(f"intv_df: {intv_df}")
             assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
             dfs = [df_int_matrix, intv_df]
-            print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
+            # print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
             dfs = [df.set_index("lang") for df in dfs]
             df_int_matrix = pd.concat(dfs, axis=1).reset_index()
         return df_int_matrix
