@@ -196,14 +196,14 @@ class Xwinograd(Dataset):
         return id_prompt_start, id_prompt_end, len_sentence, prompt_whole
 
     def get_detail_inference(self, data):
-        sentence = data['sentence']
-        option1 = data['option1']
-        option2 = data['option2']
-        answer = data['answer']
-        replacer = option1 if answer == '1' else option2
-        question = sentence.replace('_', replacer)
-        # data_detail = data['sentence'], data['option1'], data['option2'], data['answer']
-        data_detail = question
+        # sentence = data['sentence']
+        # option1 = data['option1']
+        # option2 = data['option2']
+        # answer = data['answer']
+        # replacer = option1 if answer == '1' else option2
+        # question = sentence.replace('_', replacer)
+        data_detail = data['sentence'], data['option1'], data['option2'], data['answer']
+        # data_detail = question/
         return data_detail
 
 
