@@ -1,6 +1,6 @@
 python intervention_tasks.py \
-    --dataset_kaggle "inayarahmanisa/activationxx-gemma2-neurons" \
-    --lsn_filename "raw_act_lsn_gemma2.pt" \
+    --dataset_kaggle "inayarahmanisa/lsnxx-gemma2-flores" \
+    --lsn_filename "gemma2_flores" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-gemma2-neurons" \
     --replacer_filename "max.pt" \

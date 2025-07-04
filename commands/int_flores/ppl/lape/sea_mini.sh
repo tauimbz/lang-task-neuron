@@ -1,6 +1,6 @@
 python intervention_tasks.py \
-    --dataset_kaggle "inayarahmanisa/activationxx-sea1-5-neurons" \
-    --lsn_filename "raw_act_lsn_sea1.pt" \
+    --dataset_kaggle "inayarahmanisa/lsnxx-sea1-5-flores" \
+    --lsn_filename "sea1-5_flores" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-sea1-5-neurons" \
     --replacer_filename "max.pt" \

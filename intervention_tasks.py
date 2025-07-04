@@ -528,7 +528,7 @@ def calc_perplexity_batch(
             # Sum losses and divide by number of tokens per example
             token_sums = per_token_loss.sum(dim=1)
             token_counts = shift_mask.sum(dim=1)
-            # ppl_per_example = torch.exp(token_sums / token_counts)
+            ppl_per_example = torch.exp(token_sums / token_counts)
             ppl_per_example = (token_sums / token_counts)
 
             perplexities = ppl_per_example.tolist()
