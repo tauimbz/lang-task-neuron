@@ -241,7 +241,7 @@ def get_neurons(
         else:
             raise ValueError("Dataset is not available!")
         dataset_name = dataset_instance.dataset_name
-        max_instances = max_instances if max_instances else len(ds)
+        max_instances = min(max_instances, len(ds)) if max_instances else len(ds)
         do_sent_avg = True
         do_overzero = True
         end_idx = 0
