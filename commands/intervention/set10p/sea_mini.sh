@@ -1,6 +1,6 @@
 python intervention_dod.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-sea1-5-flores" \
-    --lsn_filename "map_t1085_sea1-5_flores.pt" \
+    --lsn_filename "raw_act_lsn_sea1.pt" \
     --ld_filename "lang_dict" \
     --hf_token "***REMOVED***" \
     --model_name "SeaLLMs/SeaLLMs-v3-1.5B-Chat" \

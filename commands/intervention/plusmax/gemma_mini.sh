@@ -1,6 +1,6 @@
 python intervention_dod.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-gemma2-flores" \
-    --lsn_filename "map_t354_gemma2_flores.pt" \
+    --lsn_filename "raw_act_lsn_gemma2.pt" \
     --ld_filename "lang_dict" \
     --hf_token "***REMOVED***" \
     --model_name "google/gemma-2-2b-it" \

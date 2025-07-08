@@ -1,6 +1,6 @@
 python intervention_dod.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-sea1-5-flores" \
-    --lsn_filename "map_t1085_sea1-5_flores.pt" \
+    --lsn_filename "raw_act_lsn_sea1.pt" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-sea1-5-neurons" \
     --replacer_filename "median.pt" \
