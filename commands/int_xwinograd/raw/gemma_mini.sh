@@ -1,11 +1,11 @@
 python intervention_tasks.py \
-    --dataset_kaggle "inayarahmanisa/activationxx-sea1-5-neurons" \
-    --lsn_filename "raw_act_lsn_sea1.pt" \
+    --dataset_kaggle "inayarahmanisa/lsnxx-gemma2-neurons" \
+    --lsn_filename "raw_act_lsn_gemma2.pt" \
     --ld_filename "ld_flores200" \
-    --dataset_kaggle_replacer "inayarahmanisa/activationxx-sea1-5-neurons" \
+    --dataset_kaggle_replacer "inayarahmanisa/activationxx-gemma2-neurons" \
     --replacer_filename "max.pt" \
     --hf_token "***REMOVED***" \
-    --model_name "SeaLLMs/SeaLLMs-v3-1.5B-Chat" \
+    --model_name "google/gemma-2-2b-it" \
     --dataset_name "Muennighoff/xwinograd" \
     --split test \
     --replace_method fixed \
@@ -16,5 +16,5 @@ python intervention_tasks.py \
     --parent_dir_to_save "" \
     --target_langs 0 7 5 8 9 6 \
     --is_update \
-    --batch_size 8 \
-    > sea_mini_xwinogradxx.txt 2>&1
+    --batch_size 4 \
+    > gemma_mini_xwinogradxx.txt 2>&1

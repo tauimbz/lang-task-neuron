@@ -183,10 +183,10 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                         elif operand_t == "=":
                             output[0, start_id_to_intv:, lsn_lang[layer].long()] = replace_value_t
                         else:
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += replace_value_t
                     else:
                         if operand_nt == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= replace_value_nt
                         elif operand_nt == "=":
                             output[0, start_id_to_intv:, lsn_lang[layer].long()] = replace_value_nt
                         elif operand_nt == ".":
@@ -194,7 +194,7 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                         else:
                             output[0, start_id_to_intv:, lsn_lang[layer].long()] += replace_value_nt
                 elif replace_method == "mean":
-                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer].long()]
                     if selected.numel() == 0:
                         continue
                     mean_value = output.mean()
@@ -202,47 +202,47 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                     
                     if lang == target_lang:
                         if operand_t == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_t
                         elif operand_t == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_t
                         else:
                             # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += (mean_value * replace_value_t)
                     else:
                         if operand_nt == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_nt
                         elif operand_nt == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_nt
                         elif operand_nt == ".":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= 1
                         else:
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += mean_value * replace_value_nt
         
                 elif replace_method == "std":
-                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer].long()]
                     if selected.numel() == 0:
                         continue
                     mean_value = output.std()
                     
                     if lang == target_lang:
                         if operand_t == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_t
                         elif operand_t == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_t
                         else:
                             # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += (mean_value * replace_value_t)
                     else:
                         if operand_nt == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_nt
                         elif operand_nt == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_nt
                         elif operand_nt == ".":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= 1
                         else:
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += mean_value * replace_value_nt
                 elif replace_method == "iqr":
-                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer].long()]
                     if selected.numel() == 0:
                         continue
                     q1 = output.quantile(0.25)
@@ -251,22 +251,22 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                     
                     if lang == target_lang:
                         if operand_t == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_t
                         elif operand_t == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_t
                         else:
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += (mean_value * replace_value_t)
                     else:
                         if operand_nt == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_nt
                         elif operand_nt == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_nt
                         elif operand_nt == ".":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= 1
                         else:
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += mean_value * replace_value_nt
                 elif replace_method == "mad":
-                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer].long()]
                     if selected.numel() == 0:
                         continue
                     median = output.median()
@@ -275,23 +275,23 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                     
                     if lang == target_lang:
                         if operand_t == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_t
                         elif operand_t == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_t
                         else:
                             # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += (mean_value * replace_value_t)
                     else:
                         if operand_nt == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_nt
                         elif operand_nt == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_nt
                         elif operand_nt == ".":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= 1
                         else:
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += mean_value * replace_value_nt
                 elif replace_method == "median":
-                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer].long()]
                     if selected.numel() == 0:
                         continue
                     mean_value = output.median()
@@ -299,21 +299,21 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                     
                     if lang == target_lang:
                         if operand_t == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_t
                         elif operand_t == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_t
                         else:
                             # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += (mean_value * replace_value_t)
                     else:
                         if operand_nt == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_nt
                         elif operand_nt == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_nt
                         elif operand_nt == ".":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= 1
                         else:
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += mean_value * replace_value_nt
                 
                 elif replace_method == "percent": 
                     
@@ -363,7 +363,7 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                     if lsn_lang[layer].numel() == 0:
                         continue
                     
-                    selected = output[0, start_id_to_intv:, lsn_lang[layer]]
+                    selected = output[0, start_id_to_intv:, lsn_lang[layer].long()]
                     # print(f"selected {selected}")
                     if selected.numel() == 0:
                         continue
@@ -373,21 +373,21 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                     
                     if lang == target_lang:
                         if operand_t == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_t
                         elif operand_t == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_t
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_t
                         else:
                             # TODO: tadinya output[0, start_id_to_intv:, lsn_lang[layer]] += abs(mean_value * replace_value_t)
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += (mean_value * replace_value_t)
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += (mean_value * replace_value_t)
                     else:
                         if operand_nt == "*":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= mean_value * replace_value_nt
                         elif operand_nt == "=":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] = mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] = mean_value * replace_value_nt
                         elif operand_nt == ".":
-                            output[0, start_id_to_intv:, lsn_lang[layer]] *= 1
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] *= 1
                         else:
-                            output[0, start_id_to_intv:, lsn_lang[layer]] += mean_value * replace_value_nt
+                            output[0, start_id_to_intv:, lsn_lang[layer].long()] += mean_value * replace_value_nt
         
             
     return hook_fn

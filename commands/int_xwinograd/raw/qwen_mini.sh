@@ -1,11 +1,11 @@
 python intervention_tasks.py \
-    --dataset_kaggle "inayarahmanisa/activationxx-gemma2-neurons" \
-    --lsn_filename "raw_act_lsn_gemma2.pt" \
+    --dataset_kaggle "inayarahmanisa/lsnxx-qwen05-flores" \
+    --lsn_filename "raw_act_lsn_qwen05.pt" \
     --ld_filename "ld_flores200" \
-    --dataset_kaggle_replacer "inayarahmanisa/activationxx-gemma2-neurons" \
+    --dataset_kaggle_replacer "inayarahmanisa/activationxx-qwen05-neurons" \
     --replacer_filename "max.pt" \
     --hf_token "***REMOVED***" \
-    --model_name "google/gemma-2-2b-it" \
+    --model_name "Qwen/Qwen2.5-0.5B-Instruct" \
     --dataset_name "Muennighoff/xwinograd" \
     --split test \
     --replace_method fixed \
@@ -14,7 +14,7 @@ python intervention_tasks.py \
     --metrics "acc" \
     --kaggle_dataname_to_save "accxx-xwinograd-raw" \
     --parent_dir_to_save "" \
-    --target_langs 0 7 5 8 9 6 \
+    --target_langs 0 7 5 8 9 6  \
     --is_update \
-    --batch_size 4 \
-    > gemma_mini_xwinogradxx.txt 2>&1
+    --batch_size 8 \
+    > qwen_mini_xwinogradxx.txt 2>&1
