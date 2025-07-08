@@ -5,4 +5,4 @@ python raw_act_neurons.py  \
     --save \
     --n_layer 28 \
     --parent_dir_to_save "" \
-    --kaggle_dataname_to_save "lsnxx-sea1-5-neurons" \
+    --kaggle_dataname_to_save "lsnxx-sea1-5-flores" \
