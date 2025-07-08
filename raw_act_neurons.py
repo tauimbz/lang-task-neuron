@@ -160,7 +160,7 @@ parser.add_argument("--act_filename", type=str, default=None, help="filename tha
 parser.add_argument("--ld_filename", type=str, default=None, help="filename that saves ld")
 parser.add_argument("--save", action='store_true', help="Flag to save heatmap")
 parser.add_argument("--alpha", type=int, default=None, help="alpha for jaccard")
-parser.add_argument("--num_layer", type=int, default=None, help="number of layer")
+parser.add_argument("--n_layer", type=int, default=None, help="number of layer")
 parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
 parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
 
@@ -173,7 +173,7 @@ act_filename = args.act_filename
 download_from_kaggle(data_kaggle_result, act_filename)
 lsn = torch.load(f"data/{act_filename}")
 num_lang, num_sentences, total_neuron = lsn.shape
-num_layer = args.num_layer
+num_layer = args.n_layer
 num_neuron = total_neuron/num_layer
 
 
