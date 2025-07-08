@@ -1,4 +1,4 @@
-python intervention_tasks.py \
+python3 intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-qwen7-flores" \
     --lsn_filename "raw_act_lsn_qwen7" \
     --ld_filename "lang_dict" \
