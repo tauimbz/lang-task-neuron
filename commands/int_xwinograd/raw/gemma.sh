@@ -1,6 +1,6 @@
 python intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-gemma9-flores" \
-    --lsn_filename "gemma9_flores" \
+    --lsn_filename "raw_act_lsn_gemma9" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-gemma9-flores" \
     --replacer_filename "max.pt" \
@@ -12,7 +12,7 @@ python intervention_tasks.py \
     --operation_non_target ".1" \
     --operation_target "=10" \
     --metrics "acc" \
-    --kaggle_dataname_to_save "accxx-xwinograd-lape" \
+    --kaggle_dataname_to_save "accxx-xwinograd-raw" \
     --parent_dir_to_save "" \
     --target_langs 0 7 5 8 9 6 \
     --is_update \

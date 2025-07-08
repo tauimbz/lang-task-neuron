@@ -1,7 +1,7 @@
 python intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-sea1-5-flores" \
     --lsn_filename "raw_act_lsn_sea1.pt" \
-    --ld_filename "ld_flores200" \
+    --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-sea1-5-neurons" \
     --replacer_filename "max.pt" \
     --hf_token "***REMOVED***" \

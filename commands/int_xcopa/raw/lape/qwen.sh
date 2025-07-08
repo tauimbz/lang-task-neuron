@@ -1,6 +1,6 @@
 python intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-qwen7-flores" \
-    --lsn_filename "qwen7_flores" \
+    --lsn_filename "raw_act_lsn_qwen7" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-qwen7-flores" \
     --replacer_filename "max.pt" \
@@ -12,7 +12,7 @@ python intervention_tasks.py \
     --operation_non_target ".1" \
     --operation_target "=10" \
     --metrics "acc" \
-    --kaggle_dataname_to_save "accxx-xcopa-lape" \
+    --kaggle_dataname_to_save "accxx-xcopa-raw" \
     --parent_dir_to_save "" \
     --selected_langs "et" "ht" "id" "it" "qu" "sw" "ta" "th" "tr" "vi" "zh" \
     --target_langs 10 11 2 12 13 14 15 16 17 4 6 \
