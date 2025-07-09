@@ -1,6 +1,6 @@
 python3 intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-qwen7-flores" \
-    --lsn_filename "raw_act_lsn_qwen7" \
+    --lsn_filename "raw_act_lsn_qwen7.pt" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-qwen7-flores" \
     --replacer_filename "max.pt" \

@@ -1,6 +1,6 @@
 python3 intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-gemma9-flores" \
-    --lsn_filename "raw_act_lsn_gemma9" \
+    --lsn_filename "raw_act_lsn_gemma9.pt" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-gemma9-flores" \
     --replacer_filename "max.pt" \

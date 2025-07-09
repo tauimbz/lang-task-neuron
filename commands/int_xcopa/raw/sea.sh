@@ -1,6 +1,6 @@
 python3 intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-sea7-flores" \
-    --lsn_filename "raw_act_lsn_sea7" \
+    --lsn_filename "raw_act_lsn_sea7.pt" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-sea7-flores" \
     --replacer_filename "max.pt" \
