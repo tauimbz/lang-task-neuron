@@ -640,17 +640,17 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         choices = [choices for i in range(num_choices)]
     elif dataset_name == "facebook/flores":
         # print(f"data.keys: {data.keys()}")
-        base_lang_sentence = 'sentence_eng'
+        base_lang_sentence = 'sentence_eng_Latn'
         choice1 = [i for i in data.keys() if i.startswith(base_lang_sentence)]
         choice2 = []
-        if len(choice1) == 0:
+        if len(choice1) == 0:  # kalo sentence nya bukan translate (kyk eng-zh) tapi cuman satu, nama columnya cuman 'sentence' aja
             choice1 = [i for i in data.keys() if i.startswith("sentence")][0]
             choice2 = [i for i in data.keys() if i.startswith("sentence")][0]
         else:
             choice1 = choice1[0]
             choice2 = [i for i in data.keys() if i.startswith("sentence") and i != choice1][0]
         
-        choice1 = data[choice1]
+        choice1 = data[choice1] # english (base)
         choice2 = data[choice2]
         gold = choice2
         # choice1 = data['choice1']
@@ -724,6 +724,9 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
     elif eval_type.startswith("EVAL_PPL_FULL"):
         assert correct_sentence
         return eval_type, choices[correct_idx], target, is_generate
+    elif eval_type.startswith("TRANSLATE"):
+        assert len(choices) == 2
+        return eval_type, [choices[0]]                        , choices[1], is_generate
         # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
         # return perplexity_gold
         
@@ -880,15 +883,15 @@ def HF_infer_dataset(
                 # print(f"datas: {datas}")
                 for data in batch_data:
                     # print(f"data: {data}")
-                    choices, target, is_generate, correct_idx, num_choices, _ = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
+                    eval_type, ref, pred, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
                     # print(f"choices: {choices}\ntarget: {target}")
                     assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.extend(choices)
                     batched_continuations.extend(target)
                     batched_correct_idx.append(correct_idx)
-                # print(f"batched_prompts: {batched_prompts}")
-                # print(f"batched_continuations: {batched_continuations}")
-                # print(f"batched_correct_idx: {batched_correct_idx}")
+                print(f"batched_prompts: {batched_prompts}")
+                print(f"batched_continuations: {batched_continuations}")
+                print(f"batched_correct_idx: {batched_correct_idx}")
                 
                 assert num_choices, "num choices should not be None"
                 # print(f"len(batched_prompts): {len(batched_prompts)}")
