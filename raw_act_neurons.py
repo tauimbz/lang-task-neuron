@@ -183,7 +183,7 @@ ld_filename = args.ld_filename
 download_from_kaggle(data_kaggle_result, ld_filename)
 ld = torch.load(f"data/{ld_filename}")
 
-alpha = args.alpha if args.alpha else 2
+alpha = args.alpha if args.alpha else 1
 lsn = visualize_overlap(num_layer, num_neuron, num_lang, lsn, lang_dict=ld, alpha=alpha, save=args.save, modelname=model_name_inf)
 parent_dir = args.parent_dir_to_save
 path_res = f"{parent_dir}res/raw_act/{model_name_inf}"
