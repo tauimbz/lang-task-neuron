@@ -98,7 +98,7 @@ def make_heatmap_neuron_overlap(activation_dict, k, with_label=True, method="def
         if normalized:
             overlap_matrix = overlap_matrix / overlap_matrix.sum(axis=1, keepdims=True)
 
-    
+    save_name = f"{save_name}_{method}_{alpha}"
     # Step 3: Visualize the heatmap
     plt.figure(figsize=(15, 12))
     if with_label:
