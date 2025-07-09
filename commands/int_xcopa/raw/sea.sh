@@ -17,5 +17,5 @@ python3 intervention_tasks.py \
     --selected_langs "et" "ht" "id" "it" "qu" "sw" "ta" "th" "tr" "vi" "zh" \
     --target_langs 10 11 2 12 13 14 15 16 17 4 6 \
     --is_update \
-    --batch_size 20 \
+    --batch_size 6 \
     > sea_xcopaxx.txt 2>&1
