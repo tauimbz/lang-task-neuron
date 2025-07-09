@@ -146,7 +146,7 @@ def visualize_overlap(num_layers, neurons_per_layer, num_lang, tensor, method="d
     tensor: full neurons 3 dim
     """ 
     activation_dict = get_k_lang_actv_dict(num_lang, tensor, method, topk)
-    lsn = make_lsn(num_layers, neurons_per_layer, num_lang, activation_dict )
+    lsn = make_lsn(num_layers, neurons_per_layer, num_lang, activation_dict)
     make_heatmap_neuron_overlap(activation_dict, num_lang, False)
     make_heatmap_neuron_overlap(activation_dict, k=num_lang, with_label=True, alpha=alpha, method="default", lang_dict=ld, save=True)
     make_heatmap_neuron_overlap(activation_dict, k=num_lang, with_label=True, alpha=alpha, method="jaccard", lang_dict=ld, save=True)
