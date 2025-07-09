@@ -141,7 +141,7 @@ def make_lsn(num_layers, neurons_per_layer, num_langs, act_dict):
         reconstructed.append(lang_layers)  # list of 24 layers per language
     return reconstructed
 
-def visualize_overlap(num_layers, neurons_per_layer, num_lang, tensor, method="default", topk=0, lang_dict=None, alpha=2, save=True, modelname=""):
+def visualize_overlap(num_layers, neurons_per_layer, num_lang, tensor, method="default", topk=0, lang_dict=None, alpha=1,save=True, modelname=""):
     """
     tensor: full neurons 3 dim
     """ 
