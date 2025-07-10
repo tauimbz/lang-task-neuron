@@ -763,10 +763,15 @@ def generate_translation(source_texts, model, max_new_tokens=50):
     # Tokenize input
     inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
+    input_len = inputs["input_ids"].shape[1]
 
     # Generate output
     outputs = model.model.generate(**inputs, max_new_tokens=50)
-    translations = model.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    generated_only = outputs[:, input_len:]
+
+    # Decode only the new tokens (i.e., the translation)
+    translations = model.tokenizer.batch_decode(generated_only, skip_special_tokens=True)
+    # translations = model.tokenizer.batch_decode(outputs, skip_special_tokens=True)
     return translations
 
 def HF_infer_dataset(
@@ -947,7 +952,7 @@ def HF_infer_dataset(
                 # log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
                 # predictions = log_probs.argmax(axis=1)
                 # result_per_lang['pred'].extend(predictions)
-                result_per_lang['gold'].extend(bleu)
+                result_per_lang['gold'].append(bleu)
                 
             # if eval_type.startswith("EVAL_PPL"):
             #     eval_type, choices[correct_idx], target, is_generate
