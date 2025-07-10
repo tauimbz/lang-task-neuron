@@ -14,6 +14,7 @@ import numpy as np
 import xcopa_utils
 import xwinograd_utils
 from data_sets import map_language
+import sacrebleu
 def generate(model, prompt, with_template=True, max_new_tokens=1):
     """
     Performs inference on a given prompt.
@@ -735,7 +736,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         source = f"Translate the following from English to {lang_text}. English: {choices[0]}\n{lang_text}: "
         # [choices[0]] is sentence in eng_Latn
         #  choices[1] is sentence from the target language
-        return eval_type, [choices[0]] , choices[1], is_generate
+        return eval_type, source, [ref], is_generate
         # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
         # return perplexity_gold
         
@@ -755,6 +756,17 @@ def HF_make_df_per_lang(rows, prompt, eval_type, option_log_probs=None, pred_log
             }  
     rows.append(row)
     return rows
+
+def generate_translation(source_texts, model, max_length=50):
+    # source_texts = ["Hello, how are you?", "This is a test."]
+
+    # Tokenize input
+    inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
+
+    # Generate output
+    outputs = model.model.generate(**inputs, max_length=50)
+    translations = model.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    return translations
 
 def HF_infer_dataset(
         model, dataset_name, dataset_relations=None, langs=None, max_samples=None, is_generate=False,
@@ -888,21 +900,21 @@ def HF_infer_dataset(
                 batched_prompts = []
                 batched_continuations = []
                 batched_correct_idx = []
-                num_choices = None
+                # num_choices = None
                 # print(f"datas: {datas}")
                 for data in batch_data:
                     # print(f"data: {data}")
-                    eval_type, src, tgt, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
-                    print(f"src: {src}\n tgt: {tgt}")
+                    eval_type, src, refs, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
+                    print(f"src: {src}\n refs: {refs}") # refs is a list of list
                     # assert len(choices) == len(target), "length choices and target must be the same!"
-                    batched_prompts.extend(src)
-                    batched_continuations.extend(tgt)
-                    batched_correct_idx.append(correct_idx)
+                    batched_prompts.append(src)
+                    batched_continuations.append(refs)
+                    # batched_correct_idx.append(correct_idx)
                 print(f"batched_prompts: {batched_prompts}")
                 print(f"batched_continuations: {batched_continuations}")
-                print(f"batched_correct_idx: {batched_correct_idx}")
+                # print(f"batched_correct_idx: {batched_correct_idx}")
                 
-                assert num_choices, "num choices should not be None"
+                # assert num_choices, "num choices should not be None"
                 # print(f"len(batched_prompts): {len(batched_prompts)}")
                 # print(f"len(batched_continuations): {len(batched_continuations)}")
                 # total_len = [
@@ -913,7 +925,7 @@ def HF_infer_dataset(
                 #     for p, c in zip(batched_prompts, batched_continuations)
                 # ]
                 # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
-                input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
+                # input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
                     clean_hooks(model)
@@ -924,11 +936,17 @@ def HF_infer_dataset(
                                 replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
-                log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
-                log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
-                predictions = log_probs.argmax(axis=1)
-                result_per_lang['pred'].extend(predictions)
-                result_per_lang['gold'].extend(batched_correct_idx)
+                
+                candidates = generate_translation(batched_prompts, model, max_length=50)
+                print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
+                bleu = sacrebleu.corpus_bleu(candidates, batched_continuations)
+                print(f"bleu: {bleu}")
+
+                # log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
+                # log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
+                # predictions = log_probs.argmax(axis=1)
+                # result_per_lang['pred'].extend(predictions)
+                result_per_lang['gold'].extend(bleu)
                 
             # if eval_type.startswith("EVAL_PPL"):
             #     eval_type, choices[correct_idx], target, is_generate
