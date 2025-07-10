@@ -61,7 +61,7 @@ def to_probability_distribution(values):
     return [v / total for v in values]
 
 
-def make_heatmap_neuron_overlap(activation_dict, k, with_label=True, method="default", alpha=1, with_title=False, normalized =False, lang_dict =None, save=False, save_name="overlap_heatmap", modelname=""):
+def make_heatmap_neuron_overlap(activation_dict, k, with_label=True, method="default", alpha=1, with_title=False, normalized =False, lang_dict =None, save=False, save_name="overlap_heatmap", modelname="", annot_kws=12):
     # Example dictionary: keys 0-52, values are 1D tensors of activated neuron indices
     # activation_dict = get_k_lang_actv_dict(10)
 
@@ -103,10 +103,10 @@ def make_heatmap_neuron_overlap(activation_dict, k, with_label=True, method="def
     plt.figure(figsize=(18, 14))
     if with_label:
         if lang_dict:
-            sns.heatmap(overlap_matrix.numpy(), annot=True, fmt=".1f", annot_kws={"size": 10}, cmap="YlOrRd", linewidths=0.3,cbar =False,
+            sns.heatmap(overlap_matrix.numpy(), annot=True, fmt=".1f", annot_kws={"size": annot_kws}, cmap="YlOrRd", linewidths=0.3,cbar =False,
                         xticklabels=[langs_code_rev[lang_dict[i]] for i in range(k)], yticklabels=[langs_code_rev[lang_dict[i]] for i in range(k)])
         else:
-            sns.heatmap(overlap_matrix.numpy(), annot=True, fmt=".1f", annot_kws={"size": 10}, cmap="YlOrRd", linewidths=0.3,cbar =False,
+            sns.heatmap(overlap_matrix.numpy(), annot=True, fmt=".1f", annot_kws={"size": annot_kws}, cmap="YlOrRd", linewidths=0.3,cbar =False,
                         xticklabels=(range(k)), yticklabels=(range(k)))
         plt.xticks(fontsize=16)
         plt.yticks(fontsize=16)
@@ -141,15 +141,15 @@ def make_lsn(num_layers, neurons_per_layer, num_langs, act_dict):
         reconstructed.append(lang_layers)  # list of 24 layers per language
     return reconstructed
 
-def visualize_overlap(num_layers, neurons_per_layer, num_lang, tensor, method="default", topk=0, lang_dict=None, alpha=1,save=True, modelname=""):
+def visualize_overlap(num_layers, neurons_per_layer, num_lang, tensor, method="default", topk=0, lang_dict=None, alpha=1,save=True, modelname="", annot_kws=12):
     """
     tensor: full neurons 3 dim
     """ 
     activation_dict = get_k_lang_actv_dict(num_lang, tensor, method, topk)
     lsn = make_lsn(num_layers, neurons_per_layer, num_lang, activation_dict)
     make_heatmap_neuron_overlap(activation_dict, num_lang, False)
-    make_heatmap_neuron_overlap(activation_dict, k=num_lang, with_label=True, alpha=alpha, method="default", lang_dict=ld, save=True, modelname=model_name_inf)
-    make_heatmap_neuron_overlap(activation_dict, k=num_lang, with_label=True, alpha=alpha, method="jaccard", lang_dict=ld, save=True, modelname=model_name_inf)
+    make_heatmap_neuron_overlap(activation_dict, k=num_lang, with_label=True, alpha=alpha, method="default", lang_dict=ld, save=True, modelname=model_name_inf, annot_kws=annot_kws)
+    make_heatmap_neuron_overlap(activation_dict, k=num_lang, with_label=True, alpha=alpha, method="jaccard", lang_dict=ld, save=True, modelname=model_name_inf, annot_kws=annot_kws+4)
 
     return lsn
 
@@ -162,6 +162,7 @@ parser.add_argument("--act_filename", type=str, default=None, help="filename tha
 parser.add_argument("--ld_filename", type=str, default=None, help="filename that saves ld")
 parser.add_argument("--save", action='store_true', help="Flag to save heatmap")
 parser.add_argument("--alpha", type=int, default=None, help="alpha for jaccard")
+parser.add_argument("--annot_kws", type=int, default=None, help="font size")
 parser.add_argument("--n_layer", type=int, default=None, help="number of layer")
 parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
 parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
@@ -172,6 +173,7 @@ args = parser.parse_args()
 data_kaggle_result = args.data_kaggle_result
 model_name_inf = data_kaggle_result.split("-")[1]
 act_filename = args.act_filename
+annot_kws = args.annot_kws
 download_from_kaggle(data_kaggle_result, act_filename)
 lsn = torch.load(f"data/{act_filename}")
 num_lang, num_sentences, total_neuron = lsn.shape
@@ -184,7 +186,7 @@ download_from_kaggle(data_kaggle_result, ld_filename)
 ld = torch.load(f"data/{ld_filename}")
 
 alpha = args.alpha if args.alpha else 1
-lsn = visualize_overlap(num_layer, num_neuron, num_lang, lsn, lang_dict=ld, alpha=alpha, save=args.save, modelname=model_name_inf)
+lsn = visualize_overlap(num_layer, num_neuron, num_lang, lsn, lang_dict=ld, alpha=alpha, save=args.save, modelname=model_name_inf, annot_kws=annot_kws)
 parent_dir = args.parent_dir_to_save
 path_res = f"{parent_dir}res/raw_act/{model_name_inf}"
 os.makedirs(path_res, exist_ok=True)
