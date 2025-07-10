@@ -650,10 +650,10 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         else:
             choice1 = choice1[0]
             lang_target = [i for i in data.keys() if i.startswith("sentence") and i != choice1][0]
-            # choice2 = [i for i in data.keys() if i.startswith("sentence") and i != choice1][0]
+            choice2 = [i for i in data.keys() if i.startswith("sentence") and i != choice1][0]
         
         choice1 = data[choice1] # english (base)
-        choice2 = data[lang_target]
+        choice2 = data[choice2]
         gold = choice2
         # choice1 = data['choice1']
         # choice2 = data['choice2']
