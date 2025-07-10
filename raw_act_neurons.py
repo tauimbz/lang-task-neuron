@@ -118,8 +118,8 @@ def make_heatmap_neuron_overlap(activation_dict, k, with_label=True, method="def
     if with_title:
         plt.title(f"Overlap Heatmap of Activated Neurons: {method}")
     if save:
-        os.makedirs("vis", exist_ok=True)
-        plt.savefig(f"vis/{save_name}.pdf") 
+        os.makedirs("../vis", exist_ok=True)
+        plt.savefig(f"../vis/{save_name}.pdf") 
     plt.show()
     return overlap_matrix
 
