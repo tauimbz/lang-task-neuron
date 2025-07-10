@@ -757,14 +757,14 @@ def HF_make_df_per_lang(rows, prompt, eval_type, option_log_probs=None, pred_log
     rows.append(row)
     return rows
 
-def generate_translation(source_texts, model, max_length=50):
+def generate_translation(source_texts, model, max_new_tokens=50):
     # source_texts = ["Hello, how are you?", "This is a test."]
 
     # Tokenize input
     inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
 
     # Generate output
-    outputs = model.model.generate(**inputs, max_length=50)
+    outputs = model.model.generate(**inputs, max_new_tokens=50)
     translations = model.tokenizer.batch_decode(outputs, skip_special_tokens=True)
     return translations
 
@@ -937,7 +937,7 @@ def HF_infer_dataset(
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
                 
-                candidates = generate_translation(batched_prompts, model, max_length=50)
+                candidates = generate_translation(batched_prompts, model)
                 print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
                 bleu = sacrebleu.corpus_bleu(candidates, batched_continuations)
                 print(f"bleu: {bleu}")
