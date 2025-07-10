@@ -762,6 +762,7 @@ def generate_translation(source_texts, model, max_new_tokens=50):
 
     # Tokenize input
     inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
+    inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
     # Generate output
     outputs = model.model.generate(**inputs, max_new_tokens=50)
