@@ -148,6 +148,7 @@ def visualize_overlap(num_layers, neurons_per_layer, num_lang, tensor, method="d
     activation_dict = get_k_lang_actv_dict(num_lang, tensor, method, topk)
     lsn = make_lsn(num_layers, neurons_per_layer, num_lang, activation_dict)
     make_heatmap_neuron_overlap(activation_dict, num_lang, False)
+    annot_kws = annot_kws if annot_kws else 12
     make_heatmap_neuron_overlap(activation_dict, k=num_lang, with_label=True, alpha=alpha, method="default", lang_dict=ld, save=True, modelname=model_name_inf, annot_kws=annot_kws)
     make_heatmap_neuron_overlap(activation_dict, k=num_lang, with_label=True, alpha=alpha, method="jaccard", lang_dict=ld, save=True, modelname=model_name_inf, annot_kws=annot_kws+4)
 
@@ -173,7 +174,7 @@ args = parser.parse_args()
 data_kaggle_result = args.data_kaggle_result
 model_name_inf = data_kaggle_result.split("-")[1]
 act_filename = args.act_filename
-annot_kws = args.annot_kws
+annot_kws = args.annot_kws if args.annot_kws else 12
 download_from_kaggle(data_kaggle_result, act_filename)
 lsn = torch.load(f"data/{act_filename}")
 num_lang, num_sentences, total_neuron = lsn.shape

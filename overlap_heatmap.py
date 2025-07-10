@@ -112,7 +112,7 @@ if __name__ == "__main__":
     data_kaggle_result = args.data_kaggle_result
     model_name_inf = data_kaggle_result.split("-")[1]
     lsn_filename = args.lsn_filename
-    annot_kws = args.annot_kws
+    annot_kws = args.annot_kws if args.annot_kws else 12
     download_from_kaggle(data_kaggle_result, lsn_filename)
     lsn = torch.load(f"data/{lsn_filename}")
     # num_lang, num_sentences, total_neuron = lsn.shape
