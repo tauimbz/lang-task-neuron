@@ -638,7 +638,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         correct_sentence = choices + " " + gold
         num_choices = 2
         choices = [choices for i in range(num_choices)]
-    elif dataset_name == "facebook/flores":
+    elif dataset_name == "facebook/flores" or dataset_name == "Muennighoff/flores200" :
         # print(f"data.keys: {data.keys()}")
         base_lang_sentence = 'sentence_eng_Latn'
         choice1 = [i for i in data.keys() if i.startswith(base_lang_sentence)]
