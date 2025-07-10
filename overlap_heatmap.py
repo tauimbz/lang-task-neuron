@@ -70,7 +70,7 @@ for lang in data:
     idx_lang += 1
 
 # make_heatmap_neuron_overlap(activation_dict, k=18, with_label=True, alpha=1, method="default", lang_dict=ld, save=True, save_name="overlap_lape")
-
+annot_kws = args.annot_kws if args.annot_kws else 12
 
 make_heatmap_neuron_overlap(activation_dict, num_langs, False)
 make_heatmap_neuron_overlap(activation_dict, k=num_langs, with_label=True, alpha=alpha, method="default", lang_dict=ld, save=args.save, modelname=model_name_inf, annot_kws=annot_kws)
