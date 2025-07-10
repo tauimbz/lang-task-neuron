@@ -277,3 +277,30 @@ class Mlama(Dataset):
     def get_detail_inference(self, data):
         data_detail = data['template'], data['sub_label'] , data['obj_label']
         return data_detail
+
+
+def map_language(entry, flores_to_text=True):
+    langs_mapper = {
+        "English": "eng_Latn",
+        "Haitian Creole" : "hat_Latn",
+        "Quechua": "quy_Latn",
+        "Swahili": "swh_Latn",
+        "Thai" : "tha_Thai",
+        "Dutch": "nld_Latn",
+        "Indonesian": "ind_Latn",
+        "Malay": "zsm_Latn",
+        "Vietnamese": "vie_Latn",
+        "Japanese": "jpn_Jpan",
+        "Chinese": "zho_Hans",
+        "French": "fra_Latn",
+        "Portuguese":"por_Latn",
+        "Russian": "rus_Cyrl",
+        "Estonian":"est_Latn" ,
+        "Italian": "ita_Latn",
+        "Tamil": "tam_Taml",
+        "Turkish": "tur_Latn"
+    }
+    flores_text = {v:k for k, v in langs_mapper.items()}
+    if flores_to_text:
+        return flores_text[entry]
+        

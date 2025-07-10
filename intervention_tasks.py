@@ -13,7 +13,7 @@ import evaluate
 import numpy as np
 import xcopa_utils
 import xwinograd_utils
-
+from data_sets import map_language
 def generate(model, prompt, with_template=True, max_new_tokens=1):
     """
     Performs inference on a given prompt.
@@ -643,15 +643,17 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         base_lang_sentence = 'sentence_eng_Latn'
         choice1 = [i for i in data.keys() if i.startswith(base_lang_sentence)]
         choice2 = []
+        lang_target = None
         if len(choice1) == 0:  # kalo sentence nya bukan translate (kyk eng-zh) tapi cuman satu, nama columnya cuman 'sentence' aja
             choice1 = [i for i in data.keys() if i.startswith("sentence")][0]
             choice2 = [i for i in data.keys() if i.startswith("sentence")][0]
         else:
             choice1 = choice1[0]
-            choice2 = [i for i in data.keys() if i.startswith("sentence") and i != choice1][0]
+            lang_target = [i for i in data.keys() if i.startswith("sentence") and i != choice1][0]
+            # choice2 = [i for i in data.keys() if i.startswith("sentence") and i != choice1][0]
         
         choice1 = data[choice1] # english (base)
-        choice2 = data[choice2]
+        choice2 = data[lang_target]
         gold = choice2
         # choice1 = data['choice1']
         # choice2 = data['choice2']
@@ -724,9 +726,16 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
     elif eval_type.startswith("EVAL_PPL_FULL"):
         assert correct_sentence
         return eval_type, choices[correct_idx], target, is_generate
-    elif eval_type.startswith("TRANSLATE"):
+    elif eval_type.startswith("TRANSLATE"): # we're not computing log likelihood but generate it for bleu
         assert len(choices) == 2
-        return eval_type, [choices[0]]                        , choices[1], is_generate
+        assert lang_target
+        ref = choices[1]
+        lang_code = lang_target.split("_", 1)[-1]
+        lang_text = map_language(lang_code)
+        source = f"Translate the following from English to {lang_text}. English: {choices[0]}\n{lang_text}: "
+        # [choices[0]] is sentence in eng_Latn
+        #  choices[1] is sentence from the target language
+        return eval_type, [choices[0]] , choices[1], is_generate
         # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
         # return perplexity_gold
         
@@ -875,7 +884,7 @@ def HF_infer_dataset(
                 result_per_lang['gold'].extend(batched_correct_idx)
               
 
-            if eval_type == "TRANSLATE": #belum selesai sampai sini
+            if eval_type == "TRANSLATE": # belum selesai sampai sini
                 batched_prompts = []
                 batched_continuations = []
                 batched_correct_idx = []
@@ -883,11 +892,11 @@ def HF_infer_dataset(
                 # print(f"datas: {datas}")
                 for data in batch_data:
                     # print(f"data: {data}")
-                    eval_type, ref, pred, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
-                    # print(f"choices: {choices}\ntarget: {target}")
-                    assert len(choices) == len(target), "length choices and target must be the same!"
-                    batched_prompts.extend(choices)
-                    batched_continuations.extend(target)
+                    eval_type, src, tgt, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
+                    print(f"src: {src}\n tgt: {tgt}")
+                    # assert len(choices) == len(target), "length choices and target must be the same!"
+                    batched_prompts.extend(src)
+                    batched_continuations.extend(tgt)
                     batched_correct_idx.append(correct_idx)
                 print(f"batched_prompts: {batched_prompts}")
                 print(f"batched_continuations: {batched_continuations}")
