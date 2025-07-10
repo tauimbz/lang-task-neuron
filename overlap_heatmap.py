@@ -1,6 +1,6 @@
 # code overlap lape
 
-from raw_act_neurons import *
+from raw_act_neurons import make_heatmap_neuron_overlap
 import torch
 import matplotlib.pyplot as plt
 import seaborn as sns
