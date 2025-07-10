@@ -10,6 +10,27 @@ import numpy as np
 
 import argparse
 from kaggle_utils import *
+langs_code = {
+    "en": "eng_Latn",
+    "fr": "fra_Latn",
+    "jp": "jpn_Jpan",
+    "pt": "por_Latn",
+    "ru": "rus_Cyrl",
+    "zh": "zho_Hans",
+    "nl": "nld_Latn",
+    "id": "ind_Latn",
+    "ms": "zsm_Latn",
+    "vi": "vie_Latn",
+    "et":"est_Latn" ,
+    "it": "ita_Latn",
+    "ta": "tam_Taml",
+    "th": "tha_Thai",
+    "tr": "tur_Latn",
+    "ht":"hat_Latn",
+    "qu": "quy_Latn",
+    "sw": "swh_Latn"  
+} 
+langs_code_rev = {v:k for k,v in langs_code.items()}
 
 def make_heatmap_neuron_overlap(activation_dict, k, with_label=True, method="default", alpha=1, with_title=False, normalized =False, lang_dict =None, save=False, save_name="overlap_heatmap", modelname="", annot_kws=12):
     # Example dictionary: keys 0-52, values are 1D tensors of activated neuron indices
