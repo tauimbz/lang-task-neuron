@@ -106,6 +106,9 @@ def eval(predictions, references, metrics = None):
     }
     results = results if metrics is None else {k: v for k, v in results.items() if k in metrics}
     return results
+def eval_bleu(bleus):
+    avg_bleu = np.mean(bleus)
+    return avg_bleu
 
 def eval_ppl(perplexities):
     avg_perplexity = np.mean(perplexities)
@@ -941,7 +944,7 @@ def HF_infer_dataset(
                             set_activation_mlp_v2(
                                 replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
-                                operation_target=operation_target, attn_mask=attn_mask)))
+                                operation_target=operation_target)))
                 
                 candidates = generate_translation(batched_prompts, model)
                 print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
@@ -1050,6 +1053,13 @@ def HF_infer_dataset(
             # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
             eval_per_lang = eval_ppl(result_per_lang['gold'])
             eval_result[lang] = eval_per_lang
+
+        if eval_type.startswith("TRANSLATE"):
+            # print(f"len result_per_lang['gold']: {len(result_per_lang['gold'])}")
+            # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
+            eval_per_lang = eval_bleu(result_per_lang['gold'])
+            eval_result[lang] = eval_per_lang
+
 
         # if eval_type.startswith("DOD_NINT"):
         #     eval_result[lang] = 0
