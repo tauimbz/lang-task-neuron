@@ -126,7 +126,7 @@ def eval_ppl(perplexities, model_name, target_lang=None):
     lang = target_lang if target_lang else "baseline"
     os.makedirs(dir_ppl, exist_ok=True)
     with open(f"{dir_ppl}/perplexities.txt", "a") as f:
-        f.write(lang  + "\n")
+        f.write(f"{lang} \n")
         # for p in perplexities:
         #     f.write(f"{p}\n")
         f.write(" ".join(str(p) for p in perplexities))
