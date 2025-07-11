@@ -960,7 +960,7 @@ def HF_infer_dataset(
                 
                 print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
                 bleu = sacrebleu.corpus_bleu(candidates, batched_continuations)
-                print(f"bleu: {bleu}")
+                # print(f"bleu: {bleu}")
 
                 # log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
                 # log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
@@ -1070,6 +1070,7 @@ def HF_infer_dataset(
             # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
             eval_per_lang = eval_bleu(result_per_lang['gold'])
             eval_result[lang] = eval_per_lang
+            print(f"eval_result: {eval_result}")
 
 
         # if eval_type.startswith("DOD_NINT"):
