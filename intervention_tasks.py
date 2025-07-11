@@ -57,7 +57,7 @@ def calc_logprob_answeroptions(model, sentences, target_spans):
     Returns:
     - Dictionary mapping each detected target span to its summed log probability.
     """
-    inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True, padding_side="left")
+    inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True)
     input_ids = inputs["input_ids"].to(model.device)
     attention_mask = inputs["attention_mask"].to(model.device)
 
@@ -928,13 +928,13 @@ def HF_infer_dataset(
                 for data in batch_data:
                     # print(f"data: {data}")
                     eval_type, src, refs, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
-                    print(f"src: {src}\n refs: {refs}") # refs is a list of list
+                    # print(f"src: {src}\n refs: {refs}") # refs is a list of list
                     # assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.append(src)
                     batched_continuations.append(refs)
                     # batched_correct_idx.append(correct_idx)
-                print(f"batched_prompts: {batched_prompts}")
-                print(f"batched_continuations: {batched_continuations}")
+                # print(f"batched_prompts: {batched_prompts}")
+                # print(f"batched_continuations: {batched_continuations}")
                 # print(f"batched_correct_idx: {batched_correct_idx}")
                 
                 # assert num_choices, "num choices should not be None"
@@ -1075,7 +1075,7 @@ def HF_infer_dataset(
             # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
             eval_per_lang = eval_bleu(result_per_lang['gold'])
             eval_result[lang] = eval_per_lang
-            print(f"intervention: {intervention}. eval_result: {eval_result}")
+            # print(f"intervention: {intervention}. eval_result: {eval_result}")
 
 
         # if eval_type.startswith("DOD_NINT"):
