@@ -111,7 +111,7 @@ def eval_bleu(bleus):
     avg_bleu = np.mean(bleus)
     return avg_bleu
 
-def eval_ppl(perplexities, target_lang=None):
+def eval_ppl(perplexities, target_lang=None,delta_avg= False, intervention=False, baseline=None):
     dir_ppl = "log_ppl"
     lang = target_lang if target_lang else "baseline"
     os.makedirs(dir_ppl, exist_ok=True)
@@ -121,6 +121,11 @@ def eval_ppl(perplexities, target_lang=None):
         #     f.write(f"{p}\n")
         f.write(" ".join(str(p) for p in perplexities))
         f.write("\n")
+    if delta_avg:
+        if intervention:
+            assert len(perplexities) == len(baseline)
+            deltas = [a - b for a, b in zip(perplexities, baseline)]
+            return np.mean(deltas)
     avg_perplexity = np.mean(perplexities)
     return avg_perplexity
 def eval_dod(preds, refs):
@@ -750,7 +755,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         ref = choices[1]
         lang_code = lang_target.split("_", 1)[-1]
         lang_text = map_language(lang_code)
-        source = f"Translate the following from English to {lang_text}. English: {choices[0]}\n{lang_text}: "
+        source = f"Translate the following from English to {lang_text}. Do not add or omit any information. Translate only the sentence, and keep the output faithful and literal.\nEnglish: {choices[0]}\n{lang_text}: "
         # [choices[0]] is sentence in eng_Latn
         #  choices[1] is sentence from the target language
         return eval_type, source, [ref], is_generate
@@ -847,7 +852,9 @@ def HF_infer_dataset(
     max_instances = max_samples
     dod_languages = langs if langs else selected_langs
     eval_result = {}
+    eval_result_da = {}
     non_int_dod = {}
+    baseline_ppl = []
     for lang in selected_langs:
         if lang.startswith("all"):
             continue
@@ -1076,8 +1083,10 @@ def HF_infer_dataset(
         if eval_type.startswith("EVAL_PPL_FULL"):
             # print(f"len result_per_lang['gold']: {len(result_per_lang['gold'])}")
             # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
-            eval_per_lang = eval_ppl(result_per_lang['gold'], target_lang)
+            eval_per_lang = eval_ppl(result_per_lang['gold'], target_lang, intervention, gold_difference)
+            eval_per_lang_da = eval_ppl(result_per_lang['gold'], target_lang, True, intervention, gold_difference)
             eval_result[lang] = eval_per_lang
+            eval_result_da[lang] = eval_per_lang_da
             # print(f"intervention: {intervention}. eval_result: {eval_result}")
 
         if eval_type.startswith("TRANSLATE"):
@@ -1106,6 +1115,15 @@ def HF_infer_dataset(
     
     if eval_type == "DOD_NINT":
         return df_eval, non_int_dod
+    if eval_type == "EVAL_PPL_FULL" and not intervention:
+        return df_eval, result_per_lang['gold']
+    if eval_type == "EVAL_PPL_FULL" and intervention:
+        df_eval_da = pd.DataFrame([
+            {"lang": lang, column_name: eval_result_da[lang]} 
+            for lang in eval_result_da
+        ])
+        return df_eval, df_eval_da
+    
     return df_eval
 
 class DatasetLanguage:
@@ -1134,8 +1152,9 @@ def intervention_matrix(
     show_df_per_lang=False, metrics=None, is_generate=False, selected_langs=None, dataset_relations=None):
         lsn_neurons, lsn_languages = lsn
         df_int_matrix = pd.DataFrame()
+        df_int_matrix_delta_avg = pd.DataFrame()
         gold_difference = dict()
-        if metrics == ["dod"]:
+        if metrics == ["dod"] or metrics == "ppl_full":
             df_int_matrix, gold_difference = HF_infer_dataset(
                 model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples,is_generate=is_generate,
                 apply_template=apply_template,batch_size=batch_size,
@@ -1147,15 +1166,25 @@ def intervention_matrix(
                 apply_template=apply_template,batch_size=batch_size,
                 intervention = False,
                 split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario="baseline", selected_langs=selected_langs)
+            if metrics == "ppl_full":
+                df_int_matrix_delta_avg = df_int_matrix.copy()
         
         # INTERVENTION PART
         target_langs = target_langs if target_langs!= None else lsn_languages.get_all_idx()
         for target_lang in target_langs:
-            intv_df = HF_infer_dataset(
-                model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
-                apply_template=apply_template,batch_size=batch_size,
-                intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
-                split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
+            if metrics == "ppl_full":
+                intv_df, intv_df_da = HF_infer_dataset(
+                    model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
+                    apply_template=apply_template,batch_size=batch_size,
+                    intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
+                    split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
+            else:
+                intv_df = HF_infer_dataset(
+                    model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
+                    apply_template=apply_template,batch_size=batch_size,
+                    intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
+                    split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
+            # print(f"df_int_matrix: {df_int_matrix}")
             # print(f"df_int_matrix: {df_int_matrix}")
             # print(f"intv_df: {intv_df}")
             assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
@@ -1163,6 +1192,16 @@ def intervention_matrix(
             # print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
             dfs = [df.set_index("lang") for df in dfs]
             df_int_matrix = pd.concat(dfs, axis=1).reset_index()
+
+            if metrics == "ppl_full":
+                assert len(df_int_matrix_delta_avg) == len(intv_df_da), f"length {len(df_int_matrix_delta_avg)} is not the same as {len(intv_df_da)}, maybe the data is not parallel?"
+                dfs = [df_int_matrix_delta_avg, intv_df_da]
+                # print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
+                dfs = [df.set_index("lang") for df in dfs]
+                df_int_matrix_delta_avg = pd.concat(dfs, axis=1).reset_index()
+        
+        if metrics == "ppl_full":
+            return df_int_matrix, df_int_matrix_delta_avg
         return df_int_matrix
 
 
@@ -1294,8 +1333,30 @@ if args.dataset_kaggle_replacer:
         end = min(i + chunk_size, replacer_tensor.size(0))
         replacer_tensor[i:end] = replacer_tensor[i:end].to('cuda')
 
+delta_avg_matrix = pd.DataFrame()
 
-matrix = intervention_matrix(
+if args.metrics == "ppl_full":
+    matrix, delta_avg_matrix = intervention_matrix(
+    model=model,
+    dataset_name=args.dataset_name,
+    langs=args.langs,
+    max_samples=args.max_samples,
+    apply_template=args.apply_template,
+    batch_size=args.batch_size,
+    split=args.split,
+    replace_method=args.replace_method,
+    replacer_tensor = replacer_tensor,
+    lsn=lsn,
+    operation_non_target=args.operation_non_target,
+    operation_target=args.operation_target,
+    range_layers=range_layers,
+    target_langs=target_langs,
+    show_df_per_lang=args.show_df_per_lang,
+    metrics=args.metrics,
+    selected_langs=args.selected_langs
+) 
+else:
+    matrix = intervention_matrix(
     model=model,
     dataset_name=args.dataset_name,
     langs=args.langs,
@@ -1314,10 +1375,13 @@ matrix = intervention_matrix(
     metrics=args.metrics,
     selected_langs=args.selected_langs
 )
-
-path_res = f"{parent_dir}res"
+path_res = f"{parent_dir}res/{args.lsn_filename}"
 os.makedirs(path_res, exist_ok=True)
 matrix.to_csv(f"{path_res}/{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}.csv")
+if args.metrics == "ppl_full":
+    delta_avg_matrix.to_csv(f"{path_res}/{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}_delta_avg.csv")
+
 if args.kaggle_dataname_to_save:
     save_to_kaggle(dataset_name=args.kaggle_dataname_to_save, data_dir=path_res, is_update=args.is_update)
+
 
