@@ -15,6 +15,7 @@ import xcopa_utils
 import xwinograd_utils
 from data_sets import map_language
 import sacrebleu
+import os
 def generate(model, prompt, with_template=True, max_new_tokens=1):
     """
     Performs inference on a given prompt.
@@ -110,7 +111,16 @@ def eval_bleu(bleus):
     avg_bleu = np.mean(bleus)
     return avg_bleu
 
-def eval_ppl(perplexities):
+def eval_ppl(perplexities, target_lang=None):
+    dir_ppl = "log_ppl"
+    lang = target_lang if target_lang else "baseline"
+    os.makedirs(dir_ppl, exist_ok=True)
+    with open(f"{dir_ppl}/perplexities.txt", "a") as f:
+        f.write(lang  + "\n")
+        # for p in perplexities:
+        #     f.write(f"{p}\n")
+        f.write(" ".join(str(p) for p in perplexities))
+        f.write("\n")
     avg_perplexity = np.mean(perplexities)
     return avg_perplexity
 def eval_dod(preds, refs):
@@ -838,6 +848,7 @@ def HF_infer_dataset(
     dod_languages = langs if langs else selected_langs
     eval_result = {}
     non_int_dod = {}
+    baseline_ppl = []
     for lang in selected_langs:
         if lang.startswith("all"):
             continue
@@ -1066,9 +1077,10 @@ def HF_infer_dataset(
         if eval_type.startswith("EVAL_PPL_FULL"):
             # print(f"len result_per_lang['gold']: {len(result_per_lang['gold'])}")
             # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
-            eval_per_lang = eval_ppl(result_per_lang['gold'])
+            
+            eval_per_lang = eval_ppl(result_per_lang['gold'], target_lang)
             eval_result[lang] = eval_per_lang
-            print(f"intervention: {intervention}. eval_result: {eval_result}")
+            # print(f"intervention: {intervention}. eval_result: {eval_result}")
 
         if eval_type.startswith("TRANSLATE"):
             # print(f"len result_per_lang['gold']: {len(result_per_lang['gold'])}")
@@ -1096,7 +1108,8 @@ def HF_infer_dataset(
     
     if eval_type == "DOD_NINT":
         return df_eval, non_int_dod
-    return df_eval
+    if eval_type == "EVAL_PPL_FULL":
+        return df_eval, result_per_lang[lang]
 
 class DatasetLanguage:
     def __init__(self, languages):
@@ -1124,6 +1137,7 @@ def intervention_matrix(
     show_df_per_lang=False, metrics=None, is_generate=False, selected_langs=None, dataset_relations=None):
         lsn_neurons, lsn_languages = lsn
         df_int_matrix = pd.DataFrame()
+        df_int_matrix_delta_avg = pd.DataFrame
         gold_difference = dict()
         if metrics == ["dod"]:
             df_int_matrix, gold_difference = HF_infer_dataset(
@@ -1137,6 +1151,8 @@ def intervention_matrix(
                 apply_template=apply_template,batch_size=batch_size,
                 intervention = False,
                 split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario="baseline", selected_langs=selected_langs)
+            if metrics == "ppl_full":
+                df_int_matrix_delta_avg = df_int_matrix.copy()
         
         # INTERVENTION PART
         target_langs = target_langs if target_langs!= None else lsn_languages.get_all_idx()
