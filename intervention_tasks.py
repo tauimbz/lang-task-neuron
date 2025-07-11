@@ -1325,7 +1325,7 @@ matrix = intervention_matrix(
     selected_langs=args.selected_langs
 )
 
-path_res = f"{parent_dir}res"
+path_res = f"{parent_dir}res/{args.lsn_filename}"
 os.makedirs(path_res, exist_ok=True)
 matrix.to_csv(f"{path_res}/{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}.csv")
 if args.kaggle_dataname_to_save:
