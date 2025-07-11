@@ -955,7 +955,7 @@ def HF_infer_dataset(
                 # log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
                 # predictions = log_probs.argmax(axis=1)
                 # result_per_lang['pred'].extend(predictions)
-                result_per_lang['gold'].append(bleu)
+                result_per_lang['gold'].append(bleu.score)
                 
             # if eval_type.startswith("EVAL_PPL"):
             #     eval_type, choices[correct_idx], target, is_generate
