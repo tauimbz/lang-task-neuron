@@ -57,7 +57,7 @@ def calc_logprob_answeroptions(model, sentences, target_spans):
     Returns:
     - Dictionary mapping each detected target span to its summed log probability.
     """
-    inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True)
+    inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True, padding_side="left")
     input_ids = inputs["input_ids"].to(model.device)
     attention_mask = inputs["attention_mask"].to(model.device)
 
@@ -437,7 +437,7 @@ def tokenize_batch(model, prompts: list[str], continuations: list[str]=None):
     else:
         inputs=prompts
     # Tokenize all inputs with padding
-    encoding = model.tokenizer(inputs, return_tensors="pt", padding=True)
+    encoding = model.tokenizer(inputs, return_tensors="pt", padding=True, padding_side="left")
     input_ids = encoding["input_ids"].to(model.device)
     attention_mask = encoding["attention_mask"].to(model.device)
     return input_ids, attention_mask
@@ -510,7 +510,7 @@ def calc_perplexity_batch(
         else:
             sentences=prompts
         # sentences = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
-        inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True).to(model.device)
+        inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True, padding_side="left").to(model.device)
         input_ids = inputs.input_ids
         attention_mask = inputs.attention_mask
 
@@ -958,7 +958,7 @@ def HF_infer_dataset(
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
                 
-                print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
+                # print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
                 bleu = sacrebleu.corpus_bleu(candidates, batched_continuations)
                 # print(f"bleu: {bleu}")
 
@@ -1064,6 +1064,7 @@ def HF_infer_dataset(
             # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
             eval_per_lang = eval_ppl(result_per_lang['gold'])
             eval_result[lang] = eval_per_lang
+            print(f"intervention: {intervention}. eval_result: {eval_result}")
 
         if eval_type.startswith("TRANSLATE"):
             # print(f"len result_per_lang['gold']: {len(result_per_lang['gold'])}")
