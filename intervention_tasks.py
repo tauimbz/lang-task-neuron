@@ -437,7 +437,9 @@ def tokenize_batch(model, prompts: list[str], continuations: list[str]=None):
     else:
         inputs=prompts
     # Tokenize all inputs with padding
-    encoding = model.tokenizer(inputs, return_tensors="pt", padding=True, padding_side="left")
+    # encoding = model.tokenizer(inputs, return_tensors="pt", padding=True, padding_side="left")
+    encoding = model.tokenizer(inputs, return_tensors="pt", padding=True)
+
     input_ids = encoding["input_ids"].to(model.device)
     attention_mask = encoding["attention_mask"].to(model.device)
     return input_ids, attention_mask
@@ -510,7 +512,9 @@ def calc_perplexity_batch(
         else:
             sentences=prompts
         # sentences = [p + " " + c if c else p for p, c in zip(prompts, continuations)]
-        inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True, padding_side="left").to(model.device)
+        # inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True, padding_side="left").to(model.device)
+        inputs = model.tokenizer(sentences, return_tensors="pt", padding=True, truncation=True).to(model.device)
+        
         input_ids = inputs.input_ids
         attention_mask = inputs.attention_mask
 
