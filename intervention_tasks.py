@@ -107,7 +107,16 @@ def eval(predictions, references, metrics = None):
     }
     results = results if metrics is None else {k: v for k, v in results.items() if k in metrics}
     return results
-def eval_bleu(bleus):
+def eval_bleu(bleus, model_name, target_lang=None):
+    dir_ppl = f"log_bleu_{model_name}"
+    lang = target_lang if target_lang else "baseline"
+    os.makedirs(dir_ppl, exist_ok=True)
+    with open(f"{dir_ppl}/bleus.txt", "a") as f:
+        f.write(lang  + "\n")
+        # for p in perplexities:
+        #     f.write(f"{p}\n")
+        f.write(" ".join(str(p) for p in bleus))
+        f.write("\n")
     avg_bleu = np.mean(bleus)
     return avg_bleu
 
@@ -1083,7 +1092,7 @@ def HF_infer_dataset(
         if eval_type.startswith("TRANSLATE"):
             # print(f"len result_per_lang['gold']: {len(result_per_lang['gold'])}")
             # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
-            eval_per_lang = eval_bleu(result_per_lang['gold'])
+            eval_per_lang = eval_bleu(result_per_lang['gold'], model.model_name, target_lang)
             eval_result[lang] = eval_per_lang
             # print(f"intervention: {intervention}. eval_result: {eval_result}")
 
