@@ -111,8 +111,8 @@ def eval_bleu(bleus):
     avg_bleu = np.mean(bleus)
     return avg_bleu
 
-def eval_ppl(perplexities, target_lang=None):
-    dir_ppl = "log_ppl"
+def eval_ppl(perplexities, model_name, target_lang=None):
+    dir_ppl = f"log_ppl_{model_name}"
     lang = target_lang if target_lang else "baseline"
     os.makedirs(dir_ppl, exist_ok=True)
     with open(f"{dir_ppl}/perplexities.txt", "a") as f:
@@ -1076,7 +1076,7 @@ def HF_infer_dataset(
         if eval_type.startswith("EVAL_PPL_FULL"):
             # print(f"len result_per_lang['gold']: {len(result_per_lang['gold'])}")
             # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
-            eval_per_lang = eval_ppl(result_per_lang['gold'], target_lang)
+            eval_per_lang = eval_ppl(result_per_lang['gold'], model.model_name, target_lang)
             eval_result[lang] = eval_per_lang
             # print(f"intervention: {intervention}. eval_result: {eval_result}")
 
