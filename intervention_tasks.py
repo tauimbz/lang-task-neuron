@@ -760,16 +760,26 @@ def HF_make_df_per_lang(rows, prompt, eval_type, option_log_probs=None, pred_log
     rows.append(row)
     return rows
 
-def generate_translation(source_texts, model, max_new_tokens=50):
-    # source_texts = ["Hello, how are you?", "This is a test."]
-
+def tokenize_translation(source_texts):
     # Tokenize input
     inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
     input_len = inputs["input_ids"].shape[1]
+    attn_mask = inputs["attention_mask"]
+
+    return inputs, attn_mask, input_len
+
+
+def generate_translation(inputs, input_len, model, max_new_tokens=50):
+    # source_texts = ["Hello, how are you?", "This is a test."]
+
+    # Tokenize input
+    # inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
+    # inputs = {k: v.to(model.device) for k, v in inputs.items()}
+    # input_len = inputs["input_ids"].shape[1]
 
     # Generate output
-    outputs = model.model.generate(**inputs, max_new_tokens=50)
+    outputs = model.model.generate(**inputs, max_new_tokens=max_new_tokens)
     generated_only = outputs[:, input_len:]
 
     # Decode only the new tokens (i.e., the translation)
@@ -935,6 +945,8 @@ def HF_infer_dataset(
                 # ]
                 # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
                 # input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
+                inputs, attn_mask, input_len = tokenize_translation(batched_prompts)
+                candidates = generate_translation(inputs, input_len, model)
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
                     clean_hooks(model)
@@ -944,9 +956,8 @@ def HF_infer_dataset(
                             set_activation_mlp_v2(
                                 replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
-                                operation_target=operation_target)))
+                                operation_target=operation_target, attn_mask=attn_mask)))
                 
-                candidates = generate_translation(batched_prompts, model)
                 print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
                 bleu = sacrebleu.corpus_bleu(candidates, batched_continuations)
                 print(f"bleu: {bleu}")
