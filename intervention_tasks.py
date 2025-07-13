@@ -938,8 +938,9 @@ def HF_infer_dataset(
                 for data in batch_data:
                     # print(f"data: {data}")
                     choices, target, is_generate, correct_idx, num_choices, _ = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
-                    # print(f"choices: {choices}\ntarget: {target}")
+                    print(f"choices: {choices}\ntarget: {target}")
                     if choices.isinstance(str):
+                        print("sampe sini")
                         batched_prompts.append(choices)
                         if len(targets_same_options) == 0:
                             targets_same_options.extend(target)
