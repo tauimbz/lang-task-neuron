@@ -496,6 +496,42 @@ def calculate_logprob_batch(model, input_ids, attention_mask, prompts: list[str]
     return log_probs_per_example
 
 
+def calc_logprob_same_options(model, input_ids, attention_mask, prompts, choices = ["A", "B", "C", "D"]):
+    # Forward pass
+    with torch.no_grad():
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        logits = outputs.logits  # shape: (batch, seq_len, vocab_size)
+
+    # We need the logits at the last token (i.e., position before model should generate the answer)
+    # Compute index of the last non-padding token for each sequence
+    last_token_indices = attention_mask.sum(dim=1) - 1  # shape: (batch,)
+
+    # Get logits for the position where the model would generate next
+    next_token_logits = logits[torch.arange(len(prompts)), last_token_indices]  # shape: (batch, vocab_size)
+
+    # Get logprobs for each target
+    # choices = ["A", "B", "C", "D"]
+    choice_ids = [model.tokenizer.encode(c, add_special_tokens=False)[0] for c in choices]
+
+    # Compute logprobs
+    logprobs = F.log_softmax(next_token_logits, dim=-1)  # shape: (batch, vocab_size)
+    results = []
+    log_probs_per_example = []
+    for i in range(len(prompts)):
+        choice_logprobs = {c: logprobs[i, token_id].item() for c, token_id in zip(choices, choice_ids)}
+        log_probs_per_example.append(choice_logprobs)
+        pred = max(choice_logprobs, key=choice_logprobs.get)
+        # results.append((choice_logprobs, pred))
+        results.append( pred)
+
+    # Print results
+    for i, (lp, pred) in enumerate(results):
+        print(f"Prompt {i+1}: prediction = {pred}, logprobs = {lp}")
+
+    return results
+
+
+
 def calc_perplexity_answer(eval_type, prompt, continuation, model, is_generate=False):
     perplexity = 0
     if eval_type == "EVAL_PPL_FULL":
@@ -624,7 +660,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         num_choices = 2
         target = [target for i in range(num_choices)]
         
-    elif dataset_name == "CohereLabs/include-lite-44": #👍 same as lm eval harness
+    elif dataset_name == "CohereLabs/include-lite-44": #👍 same as lm eval harness # the only one with choices is instance of string
         option_a, option_b, option_c, option_d = tuple(data['choices'])
         question = data['question']
         correct_idx = data['answer']
@@ -633,7 +669,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         gold = target[correct_idx]
         correct_sentence = choices + " " + gold
         num_choices = 4
-        choices = [choices for i in range(num_choices)]
+        # choices = [choices for i in range(num_choices)]
         
     elif dataset_name.endswith("MLAMA-dod-185"):
         # print(f"dod_languages: {dod_languages}")
@@ -896,16 +932,23 @@ def HF_infer_dataset(
                 batched_prompts = []
                 batched_continuations = []
                 batched_correct_idx = []
+                targets_same_options = []
                 num_choices = None
                 # print(f"datas: {datas}")
                 for data in batch_data:
                     # print(f"data: {data}")
                     choices, target, is_generate, correct_idx, num_choices, _ = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
                     # print(f"choices: {choices}\ntarget: {target}")
-                    assert len(choices) == len(target), "length choices and target must be the same!"
-                    batched_prompts.extend(choices)
-                    batched_continuations.extend(target)
-                    batched_correct_idx.append(correct_idx)
+                    if choices.isinstance(str):
+                        batched_prompts.append(choices)
+                        if len(targets_same_options) == 0:
+                            targets_same_options.extend(target)
+                            batched_continuations = None
+                    else:
+                        assert len(choices) == len(target), "length choices and target must be the same!"
+                        batched_prompts.extend(choices)
+                        batched_continuations.extend(target)
+                        batched_correct_idx.append(correct_idx)
                 # print(f"batched_prompts: {batched_prompts}")
                 # print(f"batched_continuations: {batched_continuations}")
                 # print(f"batched_correct_idx: {batched_correct_idx}")
@@ -921,6 +964,7 @@ def HF_infer_dataset(
                 #     for p, c in zip(batched_prompts, batched_continuations)
                 # ]
                 # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
+
                 input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
@@ -932,9 +976,14 @@ def HF_infer_dataset(
                                 replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
-                log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
-                log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
-                predictions = log_probs.argmax(axis=1)
+                        
+                predictions = []
+                if not batched_continuations:
+                    predictions = calc_logprob_same_options(model, input_ids, attn_mask, batched_prompts, choices = targets_same_options)
+                else:
+                    log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
+                    log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
+                    predictions = log_probs.argmax(axis=1)
                 result_per_lang['pred'].extend(predictions)
                 result_per_lang['gold'].extend(batched_correct_idx)
               
