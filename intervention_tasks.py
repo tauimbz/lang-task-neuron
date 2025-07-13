@@ -525,7 +525,8 @@ def calc_logprob_same_options(model, input_ids, attention_mask, prompts, choices
         log_probs_per_example.append(choice_logprobs)
         pred = max(choice_logprobs, key=choice_logprobs.get)
         results.append((choice_logprobs, pred))
-        preds.append( pred)
+        index_pred = choices.index(pred)
+        preds.append( index_pred)
 
     # Print results
     for i, (lp, pred) in enumerate(results):
@@ -984,6 +985,7 @@ def HF_infer_dataset(
                 predictions = []
                 if not batched_continuations:
                     predictions = calc_logprob_same_options(model, input_ids, attn_mask, batched_prompts, choices = targets_same_options)
+
                 else:
                     log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
                     log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
