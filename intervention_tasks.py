@@ -946,9 +946,12 @@ def HF_infer_dataset(
                     if isinstance(choices, str):
                         print("sampe sini")
                         batched_prompts.append(choices)
+                        batched_correct_idx.append(correct_idx)
+                        
                         if len(targets_same_options) == 0:
                             targets_same_options.extend(target)
                             batched_continuations = None
+                        
                     else:
                         assert len(choices) == len(target), "length choices and target must be the same!"
                         batched_prompts.extend(choices)
