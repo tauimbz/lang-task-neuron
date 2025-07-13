@@ -669,7 +669,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         question = data['question']
         correct_idx = data['answer']
         target = ['A', 'B', 'C', 'D'] 
-        choices = f"{question.strip()}\nA. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}\nAnswer:"
+        choices = f"{question.strip()}\nA) {option_a}\nB) {option_b}\nC) {option_c}\nD) {option_d}\nAnswer:"
         gold = target[correct_idx]
         correct_sentence = choices + " " + gold
         num_choices = 4
