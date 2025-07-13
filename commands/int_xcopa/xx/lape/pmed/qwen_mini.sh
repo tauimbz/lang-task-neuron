@@ -14,6 +14,7 @@ python intervention_tasks.py \
     --metrics "acc" \
     --kaggle_dataname_to_save "accxx-xcopa-lape-pmed" \
     --parent_dir_to_save "" \
+    --is_update \
     --selected_langs "et" "ht" "id" "it" "qu" "sw" "ta" "th" "tr" "vi" "zh" \
     --target_langs 10 11 2 12 13 14 15 16 17 4 6 \
     --batch_size 6 \

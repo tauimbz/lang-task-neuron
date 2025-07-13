@@ -179,6 +179,7 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
             # output[:, :, lsn_lang[layer].long()] = replacer_tensor[target_lang][layer][lsn_lang[layer]].to(output.dtype)
             
             dims = lsn_lang[layer].long().to(output.device)  # [H']
+            replacer_tensor[target_lang][layer] = replacer_tensor[target_lang][layer].to(output.device)
             replacement_values = replacer_tensor[target_lang][layer][dims].to(dtype=output.dtype, device=output.device)
             mask = attn_mask.to(output.device).unsqueeze(-1)  # [B, T, 1]
 
@@ -529,8 +530,8 @@ def calc_logprob_same_options(model, input_ids, attention_mask, prompts, choices
         preds.append( index_pred)
 
     # Print results
-    for i, (lp, pred) in enumerate(results):
-        print(f"Prompt {i+1}: prediction = {pred}, logprobs = {lp}")
+    # for i, (lp, pred) in enumerate(results):
+    #     print(f"Prompt {i+1}: prediction = {pred}, logprobs = {lp}")
 
     return preds
 
@@ -942,9 +943,9 @@ def HF_infer_dataset(
                 for data in batch_data:
                     # print(f"data: {data}")
                     choices, target, is_generate, correct_idx, num_choices, _ = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
-                    print(f"choices: {choices}\ntarget: {target}")
+                    # print(f"choices: {choices}\ntarget: {target}")
                     if isinstance(choices, str):
-                        print("sampe sini")
+                        # print("sampe sini")
                         batched_prompts.append(choices)
                         batched_correct_idx.append(correct_idx)
                         
