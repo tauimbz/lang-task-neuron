@@ -179,8 +179,10 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
             # output[:, :, lsn_lang[layer].long()] = replacer_tensor[target_lang][layer][lsn_lang[layer]].to(output.dtype)
             
             dims = lsn_lang[layer].long().to(output.device)  # [H']
-            replacer_tensor[target_lang][layer] = replacer_tensor[target_lang][layer].to(output.device)
-            replacement_values = replacer_tensor[target_lang][layer][dims].to(dtype=output.dtype, device=output.device)
+            layer_tensor = replacer_tensor[target_lang][layer].to(output.device)  # ensure correct device
+
+            # replacer_tensor[target_lang][layer] = replacer_tensor[target_lang][layer].to(output.device)
+            replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
             mask = attn_mask.to(output.device).unsqueeze(-1)  # [B, T, 1]
 
             
