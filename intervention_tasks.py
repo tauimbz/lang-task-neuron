@@ -501,7 +501,7 @@ def calculate_logprob_batch(model, input_ids, attention_mask, prompts: list[str]
 def calc_logprob_same_options(model, input_ids, attention_mask, prompts, choices = ["A", "B", "C", "D"]):
     # Forward pass
     with torch.no_grad():
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        outputs = model.model(input_ids=input_ids, attention_mask=attention_mask)
         logits = outputs.logits  # shape: (batch, seq_len, vocab_size)
 
     # We need the logits at the last token (i.e., position before model should generate the answer)
