@@ -517,20 +517,21 @@ def calc_logprob_same_options(model, input_ids, attention_mask, prompts, choices
 
     # Compute logprobs
     logprobs = F.log_softmax(next_token_logits, dim=-1)  # shape: (batch, vocab_size)
+    preds = []
     results = []
     log_probs_per_example = []
     for i in range(len(prompts)):
         choice_logprobs = {c: logprobs[i, token_id].item() for c, token_id in zip(choices, choice_ids)}
         log_probs_per_example.append(choice_logprobs)
         pred = max(choice_logprobs, key=choice_logprobs.get)
-        # results.append((choice_logprobs, pred))
-        results.append( pred)
+        results.append((choice_logprobs, pred))
+        preds.append( pred)
 
     # Print results
     for i, (lp, pred) in enumerate(results):
         print(f"Prompt {i+1}: prediction = {pred}, logprobs = {lp}")
 
-    return results
+    return preds
 
 
 
