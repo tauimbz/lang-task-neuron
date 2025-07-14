@@ -6,7 +6,7 @@ python intervention_tasks.py \
     --replacer_filename "max.pt" \
     --hf_token "***REMOVED***" \
     --model_name "Qwen/Qwen2.5-7B-Instruct" \
-    --dataset_name "Muennighoff/flores200"  \
+    --dataset_name "facebook/flores"  \
     --split devtest \
     --noncross \
     --replace_method fixed \
