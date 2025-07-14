@@ -8,6 +8,7 @@ python intervention_tasks.py \
     --model_name "Qwen/Qwen2.5-7B-Instruct" \
     --dataset_name "Muennighoff/flores200"  \
     --split devtest \
+    --noncross \
     --replace_method fixed \
     --operation_non_target ".1" \
     --operation_target "=10" \

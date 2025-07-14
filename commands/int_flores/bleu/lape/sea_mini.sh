@@ -12,6 +12,7 @@ python intervention_tasks.py \
     --operation_non_target ".1" \
     --operation_target "=10" \
     --metrics "bleu" \
+    --noncross \
     --kaggle_dataname_to_save "bleu-flores" \
     --parent_dir_to_save "" \
     --selected_langs "eng_Latn-nld_Latn" "eng_Latn-ind_Latn" "eng_Latn-zsm_Latn" "eng_Latn-vie_Latn" "eng_Latn-jpn_Jpan" "eng_Latn-zho_Hans" "eng_Latn-fra_Latn" "eng_Latn-por_Latn" "eng_Latn-rus_Cyrl" "eng_Latn-est_Latn" "eng_Latn-hat_Latn" "eng_Latn-ita_Latn" "eng_Latn-quy_Latn" "eng_Latn-swh_Latn" "eng_Latn-tam_Taml" "eng_Latn-tha_Thai" "eng_Latn-tur_Latn" \

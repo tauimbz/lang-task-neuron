@@ -8,6 +8,7 @@ python intervention_tasks.py \
     --model_name "google/gemma-2-9b-it" \
     --dataset_name "Muennighoff/flores200" \
     --split devtest \
+    --noncross \
     --replace_method fixed \
     --operation_non_target ".1" \
     --operation_target "=10" \
