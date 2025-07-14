@@ -922,7 +922,7 @@ def HF_infer_dataset(
         
         batch_size = batch_size if batch_size else 1
 
-        if intervention and noncross and lang != lsn_languages[target_lang]:
+        if intervention and noncross and lang != lsn_languages.idx_to_lang(target_lang):
             print(f"lang: {lang}, target_lang: {target_lang}")
             result_per_lang['gold'] = [0 for i in range(max_samples)]
             continue
