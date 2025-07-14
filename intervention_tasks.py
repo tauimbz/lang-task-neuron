@@ -858,7 +858,7 @@ def HF_infer_dataset(
         model, dataset_name, dataset_relations=None, langs=None, max_samples=None, is_generate=False,
         apply_template=True, batch_size=None,
         intervention = False, replace_method=None, replacer_tensor=None, lsn_langs = [], target_lang=None, operation_non_target="*1", operation_target="*1", range_layers=[1], lsn_languages={},
-        split="test", show_df_per_lang=False, metrics=None, scenario=None, selected_langs = None, gold_difference = None):
+        split="test", show_df_per_lang=False, metrics=None, scenario=None, selected_langs = None, gold_difference = None, noncross=False):
     """
     model:InferenceModel
     intervention: list of languages want to be intervened
@@ -921,6 +921,17 @@ def HF_infer_dataset(
         max_samples = min(max_instances, len(ds)) if max_instances else len(ds)
         
         batch_size = batch_size if batch_size else 1
+
+        if intervention and noncross and lang != lsn_languages[target_lang]:
+            print(f"lang: {lang}, target_lang: {target_lang}")
+            result_per_lang['gold'] = [0 for i in range(max_samples)]
+            continue
+
+
+
+
+
+
         # dataset_loader = DataLoader(ds, batch_size=batch_size)
         # print(f"batch_size: {batch_size}")
         # samples = 0
@@ -1202,7 +1213,7 @@ def intervention_matrix(
     # property intervensi
     replace_method, replacer_tensor, lsn, operation_non_target, operation_target, range_layers,target_langs=None, #target_langs dalam lang nya sesuai yg ada di lsn[1]
     # property evaluasi
-    show_df_per_lang=False, metrics=None, is_generate=False, selected_langs=None, dataset_relations=None):
+    show_df_per_lang=False, metrics=None, is_generate=False, selected_langs=None, dataset_relations=None, noncross=False):
         lsn_neurons, lsn_languages = lsn
         df_int_matrix = pd.DataFrame()
         gold_difference = dict()
@@ -1225,7 +1236,7 @@ def intervention_matrix(
             intv_df = HF_infer_dataset(
                 model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
                 apply_template=apply_template,batch_size=batch_size,
-                intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
+                intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, noncross=noncross, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
                 split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
             # print(f"df_int_matrix: {df_int_matrix}")
             # print(f"intv_df: {intv_df}")
@@ -1283,6 +1294,7 @@ parser.add_argument('--operation_non_target', type=str, default=None)
 parser.add_argument('--operation_target', type=str, default=None)
 parser.add_argument('--range_layers', nargs='+', type=int, default=None)
 parser.add_argument('--target_langs', nargs='+', type=int, default=None)
+parser.add_argument('--noncross', action='store_true')
 
 # Property evaluasi
 parser.add_argument('--show_df_per_lang', action='store_true')  # default is False
@@ -1383,7 +1395,8 @@ matrix = intervention_matrix(
     target_langs=target_langs,
     show_df_per_lang=args.show_df_per_lang,
     metrics=args.metrics,
-    selected_langs=args.selected_langs
+    selected_langs=args.selected_langs,
+    noncross=args.noncross
 )
 
 path_res = f"{parent_dir}res/{args.lsn_filename}"
