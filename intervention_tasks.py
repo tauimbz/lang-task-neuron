@@ -1238,8 +1238,9 @@ def intervention_matrix(
                 apply_template=apply_template,batch_size=batch_size,
                 intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, noncross=noncross, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
                 split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
-            # print(f"df_int_matrix: {df_int_matrix}")
-            # print(f"intv_df: {intv_df}")
+            print(f"df_int_matrix: {df_int_matrix}")
+            print(f"intv_df: {intv_df}")
+            print(f" len(df_int_matrix): {len(df_int_matrix)} len(intv_df): {len(intv_df)}")
             assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
             dfs = [df_int_matrix, intv_df]
             # print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
