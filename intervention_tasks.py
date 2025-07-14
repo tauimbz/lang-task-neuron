@@ -921,9 +921,10 @@ def HF_infer_dataset(
         max_samples = min(max_instances, len(ds)) if max_instances else len(ds)
         
         batch_size = batch_size if batch_size else 1
-        print(f"lang.split('_')[1]: {lang.split('_')[1]}")
-        print(f"lsn_languages.idx_to_lang(target_lang): {lsn_languages.idx_to_lang(target_lang)}")
-        if intervention and noncross and lang.split("_")[1] != lsn_languages.idx_to_lang(target_lang):
+        if intervention:
+            print(f"lang.split('_')[1]: {lang.split('-')[1]}")
+            print(f"lsn_languages.idx_to_lang(target_lang): {lsn_languages.idx_to_lang(target_lang)}")
+        if intervention and noncross and lang.split("-")[1] != lsn_languages.idx_to_lang(target_lang):
             print(f"lang: {lang}, target_lang: {target_lang}")
             eval_result[lang] = [0 for i in range(max_samples)]
             # result_per_lang['gold'] = [0 for i in range(max_samples)]
