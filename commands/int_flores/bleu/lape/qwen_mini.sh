@@ -8,6 +8,7 @@ python intervention_tasks.py \
     --model_name "Qwen/Qwen2.5-0.5B-Instruct" \
     --dataset_name "facebook/flores" \
     --split devtest \
+    --noncross \
     --replace_method fixed \
     --operation_non_target ".1" \
     --operation_target "=10" \
