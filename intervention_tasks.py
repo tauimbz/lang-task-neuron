@@ -924,7 +924,8 @@ def HF_infer_dataset(
 
         if intervention and noncross and lang != lsn_languages.idx_to_lang(target_lang):
             print(f"lang: {lang}, target_lang: {target_lang}")
-            result_per_lang['gold'] = [0 for i in range(max_samples)]
+            eval_result[lang] = [0 for i in range(max_samples)]
+            # result_per_lang['gold'] = [0 for i in range(max_samples)]
             continue
 
 
