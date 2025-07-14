@@ -6,7 +6,7 @@ python intervention_tasks.py \
     --replacer_filename "max.pt" \
     --hf_token "***REMOVED***" \
     --model_name "SeaLLMs/SeaLLMs-v3-7B-Chat" \
-    --dataset_name "facebook/flores"  \
+    --dataset_name "Muennighoff/flores200"  \
     --split devtest \
     --replace_method fixed \
     --operation_non_target ".1" \
