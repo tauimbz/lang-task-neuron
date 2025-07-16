@@ -2,4 +2,6 @@ MLAMA
 ['de', 'en', 'fr', 'id', 'jp', 'ko', 'ms', 'nl', 'pt', 'ru', 'vi', 'zh']
 
 FLORES
-"deu_Latn" "eng_Latn" "fra_Latn" "ind_Latn" "jpn_Jpan" "kor_Hang" "zsm_Latn" "nld_Latn" "por_Latn" "rus_Cyrl" "vie_Latn" "zho_Hans"
+deu_Latn eng_Latn fra_Latn ind_Latn jpn_Jpan kor_Hang zsm_Latn nld_Latn por_Latn rus_Cyrl vie_Latn zho_Hans
+
+Dutch Indonesian Malay Vietnamese Japanese Chinese French Portuguese Russian Estonian Italian  Tamil Turkish \
