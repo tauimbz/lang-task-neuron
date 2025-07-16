@@ -1043,6 +1043,8 @@ def HF_infer_dataset(
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
                 
+                
+                batched_continuations = list(zip(*batched_continuations))
                 print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
                 bleu = sacrebleu.corpus_bleu(candidates, batched_continuations)
                 # print(f"bleu: {bleu}")
