@@ -1069,7 +1069,7 @@ os.makedirs(path_res, exist_ok=True)
 
 if perlayer:
     for layer, m in matrix.items():
-        matrix.to_csv(f"{path_res}/{layer}_{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}.csv")
+        m.to_csv(f"{path_res}/{layer}_{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}.csv")
 else:
     matrix.to_csv(f"{path_res}/{range_layers}_{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}.csv")
 if args.kaggle_dataname_to_save:
