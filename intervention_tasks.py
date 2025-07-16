@@ -1218,7 +1218,7 @@ def intervention_matrix(
     # property intervensi
     replace_method, replacer_tensor, lsn, operation_non_target, operation_target, range_layers,target_langs=None, #target_langs dalam lang nya sesuai yg ada di lsn[1]
     # property evaluasi
-    show_df_per_lang=False, metrics=None, is_generate=False, selected_langs=None, dataset_relations=None, noncross=False):
+    show_df_per_lang=False, metrics=None, is_generate=False, selected_langs=None, dataset_relations=None, noncross=False, perlayer=False):
         lsn_neurons, lsn_languages = lsn
         df_int_matrix = pd.DataFrame()
         gold_difference = dict()
@@ -1235,23 +1235,47 @@ def intervention_matrix(
                 intervention = False,
                 split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario="baseline", selected_langs=selected_langs)
         
+        
         # INTERVENTION PART
-        target_langs = target_langs if target_langs!= None else lsn_languages.get_all_idx()
-        for target_lang in target_langs:
-            intv_df = HF_infer_dataset(
-                model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
-                apply_template=apply_template,batch_size=batch_size,
-                intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, noncross=noncross, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
-                split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
-            # print(f"df_int_matrix: {df_int_matrix}")
-            # print(f"intv_df: {intv_df}")
-            # print(f" len(df_int_matrix): {len(df_int_matrix)} len(intv_df): {len(intv_df)}")
-            assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
-            dfs = [df_int_matrix, intv_df]
-            # print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
-            dfs = [df.set_index("lang") for df in dfs]
-            df_int_matrix = pd.concat(dfs, axis=1).reset_index()
-        return df_int_matrix
+        if perlayer:
+            perlayer_results = dict()
+            for layer in range_layers:
+                df_int_matrix_perlayer = df_int_matrix.copy()
+                target_langs = target_langs if target_langs!= None else lsn_languages.get_all_idx()
+                for target_lang in target_langs:
+                    intv_df = HF_infer_dataset(
+                        model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
+                        apply_template=apply_template,batch_size=batch_size,
+                        intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, noncross=noncross, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=[layer],lsn_languages=lsn_languages,
+                        split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
+                    # print(f"df_int_matrix: {df_int_matrix}")
+                    # print(f"intv_df: {intv_df}")
+                    # print(f" len(df_int_matrix): {len(df_int_matrix)} len(intv_df): {len(intv_df)}")
+                    assert len(df_int_matrix_perlayer) == len(intv_df), f"length {len(df_int_matrix_perlayer)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
+                    dfs = [df_int_matrix_perlayer, intv_df]
+                    # print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
+                    dfs = [df.set_index("lang") for df in dfs]
+                    df_int_matrix_perlayer = pd.concat(dfs, axis=1).reset_index()
+                perlayer_results[layer] = df_int_matrix_perlayer
+            return perlayer_results
+        else:
+            target_langs = target_langs if target_langs!= None else lsn_languages.get_all_idx()
+            for target_lang in target_langs:
+                intv_df = HF_infer_dataset(
+                    model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples, is_generate=is_generate,
+                    apply_template=apply_template,batch_size=batch_size,
+                    intervention = True, replace_method=replace_method, replacer_tensor=replacer_tensor, lsn_langs = lsn_neurons, noncross=noncross, target_lang=target_lang, operation_non_target=operation_non_target, operation_target=operation_target, range_layers=range_layers,lsn_languages=lsn_languages,
+                    split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario=f"intv_{lsn_languages.idx_to_lang(target_lang)}", selected_langs=selected_langs, gold_difference=gold_difference)
+                # print(f"df_int_matrix: {df_int_matrix}")
+                # print(f"intv_df: {intv_df}")
+                # print(f" len(df_int_matrix): {len(df_int_matrix)} len(intv_df): {len(intv_df)}")
+                assert len(df_int_matrix) == len(intv_df), f"length {len(df_int_matrix)} is not the same as {len(intv_df)}, maybe the data is not parallel?"
+                dfs = [df_int_matrix, intv_df]
+                # print(f"df_int_matrix: {df_int_matrix.columns}, intv_df: {intv_df.columns}")
+                dfs = [df.set_index("lang") for df in dfs]
+                df_int_matrix = pd.concat(dfs, axis=1).reset_index()
+            return df_int_matrix
+
 
 
 def alter_name(operation_target, operation_non_target, replacer_filename=None):
@@ -1301,6 +1325,8 @@ parser.add_argument('--operation_target', type=str, default=None)
 parser.add_argument('--range_layers', nargs='+', type=int, default=None)
 parser.add_argument('--target_langs', nargs='+', type=int, default=None)
 parser.add_argument('--noncross', action='store_true')
+parser.add_argument('--perlayer', action='store_true')
+
 
 # Property evaluasi
 parser.add_argument('--show_df_per_lang', action='store_true')  # default is False
@@ -1353,6 +1379,7 @@ pprint(vars(args))
 
 parent_dir = args.parent_dir_to_save if args.parent_dir_to_save else ""
 login(args.hf_token)
+perlayer = args.perlayer
 model = InferenceModel(args.model_name)
 range_layers = args.range_layers if args.range_layers else range(0, model.num_layers)
 dataset_title_name = args.dataset_name.split("/")[1]
@@ -1402,12 +1429,18 @@ matrix = intervention_matrix(
     show_df_per_lang=args.show_df_per_lang,
     metrics=args.metrics,
     selected_langs=args.selected_langs,
-    noncross=args.noncross
+    noncross=args.noncross,
+    perlayer = perlayer
 )
 
 path_res = f"{parent_dir}res/{args.lsn_filename}"
 os.makedirs(path_res, exist_ok=True)
-matrix.to_csv(f"{path_res}/{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}.csv")
+
+if perlayer:
+    for layer, m in matrix.items():
+        matrix.to_csv(f"{path_res}/{layer}_{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}.csv")
+else:
+    matrix.to_csv(f"{path_res}/{alter_name(args.operation_target, args.operation_non_target, args.replacer_filename)}_{args.replace_method}_{args.model_name.split('/')[1]}_{dataset_title_name}_{args.metrics[0]}.csv")
 if args.kaggle_dataname_to_save:
     save_to_kaggle(dataset_name=args.kaggle_dataname_to_save, data_dir=path_res, is_update=args.is_update)
 
