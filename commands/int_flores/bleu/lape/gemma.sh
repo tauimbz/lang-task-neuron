@@ -1,6 +1,4 @@
-export TORCH_LOGS="recompiles"
-export PYTORCH_ENABLE_DYNAMO=1
-export PYTHONWARNINGS="ignore"
+export PYTORCH_ENABLE_DYNAMO=0
 
 # Add this to prevent crashing on recompile limits
 export PYTHONSTARTUP=<(echo "import torch._dynamo; torch._dynamo.config.suppress_errors = True")
