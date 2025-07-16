@@ -1,4 +1,11 @@
-python intervention_tasks.py \
+export TORCH_LOGS="recompiles"
+export PYTORCH_ENABLE_DYNAMO=1
+export PYTHONWARNINGS="ignore"
+
+# Add this to prevent crashing on recompile limits
+export PYTHONSTARTUP=<(echo "import torch._dynamo; torch._dynamo.config.suppress_errors = True")
+
+python3 intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-gemma9-flores" \
     --lsn_filename "gemma9_flores" \
     --ld_filename "lang_dict" \
