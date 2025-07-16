@@ -16,10 +16,22 @@ import xwinograd_utils
 from data_sets import map_language
 import sacrebleu
 import os
-import torch
-torch._dynamo.config.suppress_errors = True
-torch._dynamo.reset()  # Fully clears cached graphs
 
+
+from contextlib import contextmanager
+import torch._dynamo
+
+@contextmanager
+def no_compile():
+    torch._dynamo.disable()
+    yield
+# Disable torch.compile entirely
+torch.compile = lambda model, *args, **kwargs: model
+
+# Disable Dynamo entirely
+torch._dynamo.config.suppress_errors = True
+torch._dynamo.config.capture_scalar_outputs = False
+torch._dynamo.disable()
 def generate(model, prompt, with_template=True, max_new_tokens=1):
     
     """
@@ -856,7 +868,8 @@ def generate_translation(inputs, input_len, model, max_new_tokens=50):
     torch._dynamo.config.suppress_errors = True
     torch._dynamo.config.cache_size_limit = 1
     # Generate output
-    outputs = model.model.generate(**inputs, max_new_tokens=max_new_tokens)
+    with no_compile():
+        outputs = model.model.generate(**inputs, max_new_tokens=max_new_tokens)
     generated_only = outputs[:, input_len:]
 
     # Decode only the new tokens (i.e., the translation)
