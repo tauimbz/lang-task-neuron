@@ -16,6 +16,10 @@ import xwinograd_utils
 from data_sets import map_language
 import sacrebleu
 import os
+import torch
+torch._dynamo.config.suppress_errors = True
+torch._dynamo.reset()  # Fully clears cached graphs
+
 def generate(model, prompt, with_template=True, max_new_tokens=1):
     
     """
