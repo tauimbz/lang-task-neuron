@@ -1029,23 +1029,7 @@ def HF_infer_dataset(
                     # assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.append(src)
                     batched_continuations.append(refs)
-                    # batched_correct_idx.append(correct_idx)
-                # print(f"batched_prompts: {batched_prompts}")
-                # print(f"batched_continuations: {batched_continuations}")
-                # print(f"batched_correct_idx: {batched_correct_idx}")
-                
-                # assert num_choices, "num choices should not be None"
-                # print(f"len(batched_prompts): {len(batched_prompts)}")
-                # print(f"len(batched_continuations): {len(batched_continuations)}")
-                # total_len = [
-                #     len(
-                #         model.tokenizer(p + " " + c, return_tensors="pt")
-                #         .to(model.device)["input_ids"][0]
-                #     )
-                #     for p, c in zip(batched_prompts, batched_continuations)
-                # ]
-                # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
-                # input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
+                 
                 inputs, attn_mask, input_len = tokenize_translation(batched_prompts)
                 candidates = generate_translation(inputs, input_len, model)
                 if intervention:
@@ -1059,14 +1043,9 @@ def HF_infer_dataset(
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
                 
-                # print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
+                print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
                 bleu = sacrebleu.corpus_bleu(candidates, batched_continuations)
                 # print(f"bleu: {bleu}")
-
-                # log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
-                # log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
-                # predictions = log_probs.argmax(axis=1)
-                # result_per_lang['pred'].extend(predictions)
                 result_per_lang['gold'].append(bleu.score)
                 
             # if eval_type.startswith("EVAL_PPL"):
