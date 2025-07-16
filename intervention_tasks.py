@@ -17,6 +17,7 @@ from data_sets import map_language
 import sacrebleu
 import os
 def generate(model, prompt, with_template=True, max_new_tokens=1):
+    
     """
     Performs inference on a given prompt.
     Returns the decoded output.
@@ -846,7 +847,11 @@ def generate_translation(inputs, input_len, model, max_new_tokens=50):
     # inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
     # inputs = {k: v.to(model.device) for k, v in inputs.items()}
     # input_len = inputs["input_ids"].shape[1]
-
+    if model.model_name.startswith("google"):
+        import torch._dynamo
+        torch._dynamo.reset()
+        torch._dynamo.config.suppress_errors = True
+        torch._dynamo.config.cache_size_limit = 1
     # Generate output
     outputs = model.model.generate(**inputs, max_new_tokens=max_new_tokens)
     generated_only = outputs[:, input_len:]
