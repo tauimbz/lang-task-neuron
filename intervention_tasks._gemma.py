@@ -941,7 +941,8 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         lang_code = lang_target.split("_", 1)[-1]
         lang_text = map_language(lang_code)
         # source = f"Translate the following from English to {lang_text}. English: {choices[0]}.\n{lang_text}: "
-        source = f"Translate from English to {lang_text}.\n\nEnglish: {choices[0]}\n{lang_text}:"
+        # source = f"Translate from English to {lang_text}.\n\nEnglish: {choices[0]}\n{lang_text}:"
+        source = f"Translate from English into the target language.\n\nEnglish: {choices[0]}\nTarget language: "
 
         # [choices[0]] is sentence in eng_Latn
         #  choices[1] is sentence from the target language

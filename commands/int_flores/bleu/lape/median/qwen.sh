@@ -1,4 +1,4 @@
-python intervention_tasks_gemma.py \
+python intervention_tasks_qwensea.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-qwen7-flores" \
     --lsn_filename "qwen7_flores" \
     --ld_filename "lang_dict" \
