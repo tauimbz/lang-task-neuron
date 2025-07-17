@@ -16,22 +16,24 @@ import xwinograd_utils
 from data_sets import map_language
 import sacrebleu
 import os
+from transformers.activations import GELUActivation
+from types import MethodType
 
 
-# from contextlib import contextmanager
-# import torch._dynamo
+from contextlib import contextmanager
+import torch._dynamo
 
-# @contextmanager
-# def no_compile():
-#     torch._dynamo.disable()
-#     yield
-# # Disable torch.compile entirely
-# torch.compile = lambda model, *args, **kwargs: model
+@contextmanager
+def no_compile():
+    torch._dynamo.disable()
+    yield
+# Disable torch.compile entirely
+torch.compile = lambda model, *args, **kwargs: model
 
-# # Disable Dynamo entirely
-# torch._dynamo.config.suppress_errors = True
-# torch._dynamo.config.capture_scalar_outputs = False
-# torch._dynamo.disable()
+# Disable Dynamo entirely
+torch._dynamo.config.suppress_errors = True
+torch._dynamo.config.capture_scalar_outputs = False
+torch._dynamo.disable()
 def generate(model, prompt, with_template=True, max_new_tokens=1):
     
     """
@@ -165,6 +167,89 @@ def clean_hooks(infer_model):
     for i in range(len(infer_model.model.model.layers)):
         mlp = infer_model.model.model.layers[i].mlp
         mlp.act_fn._forward_hooks.clear()
+
+original_forward = GELUActivation.forward
+def make_patched_forward(
+    replace_method, replacer_tensor, model_name, name, lsn_langs,
+    target_lang, operation_non_target, operation_target, attn_mask
+):
+    def patched_forward(self, x):
+        output = GELUActivation.forward(self, x)  # call original
+        layer = int(name)
+
+        if replacer_tensor is not None:
+            lsn_lang = lsn_langs[target_lang]
+            if lsn_lang[layer].numel() == 0:
+                return output
+
+            dims = lsn_lang[layer].long().to(output.device)
+            layer_tensor = replacer_tensor[target_lang][layer].to(output.device)
+            replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
+
+            mask = attn_mask.to(output.device).unsqueeze(-1)
+            output_selected = output[:, :, dims]
+            replacement_broadcasted = replacement_values.view(1, 1, -1)
+
+            output[:, :, dims] = torch.where(
+                mask.bool(),
+                replacement_broadcasted.expand_as(output_selected),
+                output_selected
+            )
+            print(f"[Intervention applied at layer {layer}]")
+
+        return output
+
+    return patched_forward
+
+# def patched_fw(input, replace_method, replacer_tensor, model_name, name, lsn_langs, target_lang, operation_non_target, operation_target, start_idx=None, attn_mask=None): 
+#     """
+#     This changes all neuron lape values to be replaced_values but leave behind a desired target language. 
+#         replace_method: lape or all
+#         name (str): buat namain layer
+#         lsn_langs: dict semua language lapef
+#         target_lang: int index target_lang in lape. Has to exist in the lsn_langs and have the same index.
+#         operation: *10, =0, +5, etc
+#     """
+#     operand_t = operation_target[0]
+#     replace_value_t = int(operation_target[1:])
+#     if operand_t not in ["=", "*", "+"]:
+#         raise ValueError("operand is wrong!")
+
+#     operand_nt = operation_non_target[0]
+#     replace_value_nt = int(operation_non_target[1:])
+#     if operand_nt not in ["=", "*", "+", "."]:
+#         raise ValueError("operand is wrong!")
+#     # print(f"replace_value_t: {replace_value_t}")
+#     output = original_forward(self, input)
+#     start_id_to_intv = 0
+#     layer = int(name)
+#     if replacer_tensor is not None:
+#         lsn_lang = lsn_langs[target_lang]
+#         if lsn_lang[layer].numel() == 0:
+#             return
+#         # output[:, :, lsn_lang[layer].long()] = replacer_tensor[target_lang][layer][lsn_lang[layer]].to(output.dtype)
+        
+#         dims = lsn_lang[layer].long().to(output.device)  # [H']
+#         layer_tensor = replacer_tensor[target_lang][layer].to(output.device)  # ensure correct device
+
+#         # replacer_tensor[target_lang][layer] = replacer_tensor[target_lang][layer].to(output.device)
+#         replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
+#         mask = attn_mask.to(output.device).unsqueeze(-1)  # [B, T, 1]
+
+        
+#         output_selected = output[:, :, dims]  # [B, T, H']
+        
+#         # [H'] -> [1, 1, H'] so it can broadcast across B and T
+#         replacement_broadcasted = replacement_values.view(1, 1, -1)
+        
+#         output[:, :, dims] = torch.where(
+#             mask.bool(),  # [B, T, 1]
+#             replacement_broadcasted.expand_as(output_selected),  # [B, T, H']
+#             output_selected  # keep original where mask is 0
+#         )
+#         return output
+
+
 def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn_langs, target_lang, operation_non_target, operation_target, start_idx=None, attn_mask=None): 
     """
     This changes all neuron lape values to be replaced_values but leave behind a desired target language. 
@@ -868,14 +953,20 @@ def generate_translation(inputs, input_len, model, max_new_tokens=50):
     torch._dynamo.config.suppress_errors = True
     torch._dynamo.config.cache_size_limit = 1
     # Generate output
-    # with no_compile():
-    outputs = model.model.generate(**inputs, max_new_tokens=max_new_tokens)
+    with no_compile():
+        outputs = model.model.generate(**inputs, max_new_tokens=max_new_tokens)
     generated_only = outputs[:, input_len:]
 
     # Decode only the new tokens (i.e., the translation)
     translations = model.tokenizer.batch_decode(generated_only, skip_special_tokens=True)
     # translations = model.tokenizer.batch_decode(outputs, skip_special_tokens=True)
     return translations
+
+def clean_monkey(model):
+    for i in range_layers:
+        act_fn = model.model.model.layers[i].mlp.act_fn
+        act_fn.forward = GELUActivation.forward 
+
 
 def HF_infer_dataset(
         model, dataset_name, dataset_relations=None, langs=None, max_samples=None, is_generate=False,
@@ -1054,15 +1145,35 @@ def HF_infer_dataset(
                 inputs, attn_mask, input_len = tokenize_translation(batched_prompts)
                 candidates = generate_translation(inputs, input_len, model)
                 if intervention:
+                    for i in range_layers:  # or `for i, layer in enumerate(model.model.layers)`
+                        layer = model.model.model.layers[i]
+                        act_fn = layer.mlp.act_fn
+                        patched = make_patched_forward(
+                            replace_method=replace_method,
+                            replacer_tensor=replacer_tensor,
+                            model_name=model.model_name,
+                            name=f"{i}",
+                            lsn_langs=lsn_langs,
+                            target_lang=target_lang,
+                            operation_non_target=operation_non_target,
+                            operation_target=operation_target,
+                            attn_mask=attn_mask,
+                        )
+                        act_fn.forward = MethodType(patched, act_fn)
+                    # for idx, layer in enumerate(model.model.model.layers):
+                    #     if isinstance(layer.mlp.act_fn, GELUActivation):
+                    #         act_fn = layer.mlp.act_fn
+                    #         act_fn.layer_idx = idx  # pass index for use in logic
+                    #         act_fn.forward = patched_fw.__get__(act_fn, GELUActivation)  # bind method
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
-                    clean_hooks(model)
-                    for i in (range_layers):
-                        mlp = model.model.model.layers[i].mlp
-                        handlers.append(mlp.act_fn.register_forward_hook(
-                            set_activation_mlp_v2(
-                                replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
-                                target_lang=target_lang, operation_non_target=operation_non_target, 
-                                operation_target=operation_target, attn_mask=attn_mask)))
+                    # clean_hooks(model)
+                    # for i in (range_layers):
+                    #     mlp = model.model.model.layers[i].mlp
+                    #     handlers.append(mlp.act_fn.register_forward_hook(
+                    #         set_activation_mlp_v2(
+                    #             replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
+                    #             target_lang=target_lang, operation_non_target=operation_non_target, 
+                    #             operation_target=operation_target, attn_mask=attn_mask)))
                 
                 
                 batched_continuations = list(zip(*batched_continuations))
@@ -1154,7 +1265,7 @@ def HF_infer_dataset(
             # cleanup
             for handler in handlers:
                 handler.remove()
-            
+            clean_monkey(model)
             clean_hooks(model)
                 
         if eval_type == "EVAL_TASK":
