@@ -1065,7 +1065,7 @@ def HF_infer_dataset(
                     batched_continuations.append(refs)
                  
                 inputs, attn_mask, input_len = tokenize_translation(batched_prompts)
-                candidates = generate_translation(inputs, input_len, model)
+                
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
                     clean_hooks(model)
@@ -1076,7 +1076,7 @@ def HF_infer_dataset(
                                 replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
-                
+                candidates = generate_translation(inputs, input_len, model)
                 
                 batched_continuations = list(zip(*batched_continuations))
                 print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
