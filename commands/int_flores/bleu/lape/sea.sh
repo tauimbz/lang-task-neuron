@@ -18,5 +18,5 @@ python3 intervention_tasks_qwensea.py \
     --target_langs 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 \
     --is_update \
     --noncross \
-    --batch_size 10 \
+    --batch_size 1 \
     > sea_bleu_lape.txt 2>&1
