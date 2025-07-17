@@ -1178,25 +1178,30 @@ def HF_infer_dataset(
                     batched_continuations.append(refs)
                  
                 inputs, attn_mask, input_len = tokenize_translation(batched_prompts)
-                candidates = generate_translation(inputs, input_len, model)
+                
                 if intervention:
                     for i in range_layers:  # or `for i, layer in enumerate(model.model.layers)`
                         layer = model.model.model.layers[i]
                         mlp = model.model.model.layers[i].mlp
+                        handlers.append(mlp.act_fn.register_forward_hook(
+                            set_activation_mlp_v2(
+                                replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
+                                target_lang=target_lang, operation_non_target=operation_non_target, 
+                                operation_target=operation_target, attn_mask=attn_mask)))
 
-                        custom_gelu = make_custom_gelu(
-                            replace_method=replace_method,
-                            replacer_tensor=replacer_tensor,
-                            model_name=model.model_name,
-                            name=f"{i}",
-                            lsn_langs=lsn_langs,
-                            target_lang=target_lang,
-                            operation_non_target=operation_non_target,
-                            operation_target=operation_target,
-                            attn_mask=attn_mask,
-                        )
+                        # custom_gelu = make_custom_gelu(
+                        #     replace_method=replace_method,
+                        #     replacer_tensor=replacer_tensor,
+                        #     model_name=model.model_name,
+                        #     name=f"{i}",
+                        #     lsn_langs=lsn_langs,
+                        #     target_lang=target_lang,
+                        #     operation_non_target=operation_non_target,
+                        #     operation_target=operation_target,
+                        #     attn_mask=attn_mask,
+                        # )
 
-                        mlp.act_fn = custom_gelu
+                        # mlp.act_fn = custom_gelu
                         # act_fn = layer.mlp.act_fn
                         # patched = make_patched_forward(
                         #     replace_method=replace_method,
@@ -1225,7 +1230,7 @@ def HF_infer_dataset(
                     #             target_lang=target_lang, operation_non_target=operation_non_target, 
                     #             operation_target=operation_target, attn_mask=attn_mask)))
                 
-                
+                candidates = generate_translation(inputs, input_len, model)
                 batched_continuations = list(zip(*batched_continuations))
                 print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
                 bleu = sacrebleu.corpus_bleu(candidates, batched_continuations)
