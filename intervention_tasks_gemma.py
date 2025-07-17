@@ -214,10 +214,10 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
             # replacer_tensor[target_lang][layer] = replacer_tensor[target_lang][layer].to(output.device)
             replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
             mask = attn_mask.to(output.device).unsqueeze(-1)  # [B, T, 1]
-            mask = mask.expand_as(output_selected) 
+            
             
             output_selected = output[:, :, dims]  # [B, T, H']
-            
+            mask = mask.expand_as(output_selected) 
             # [H'] -> [1, 1, H'] so it can broadcast across B and T
             replacement_broadcasted = replacement_values.view(1, 1, -1)
             
