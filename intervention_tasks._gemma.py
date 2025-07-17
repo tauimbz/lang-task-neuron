@@ -168,7 +168,7 @@ def clean_hooks(infer_model):
         mlp = infer_model.model.model.layers[i].mlp
         mlp.act_fn._forward_hooks.clear()
 
-original_forward = GELUActivation.forward
+# original_forward = GELUActivation.forward
 
 def make_custom_gelu(
     replace_method, replacer_tensor, model_name, name, lsn_langs,
