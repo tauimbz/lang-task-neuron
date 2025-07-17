@@ -203,6 +203,7 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
         start_id_to_intv = 0
         layer = int(name)
         if replacer_tensor is not None:
+            # print(f"max. ")
             lsn_lang = lsn_langs[target_lang]
             if lsn_lang[layer].numel() == 0:
                 return
@@ -211,6 +212,7 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
             
             # dims = lsn_lang[layer].long().to(output.device)  # [H']
             dims = lsn_lang[layer]
+            print(f"max. dims: {dims}")
             if not isinstance(dims, torch.Tensor):
                 dims = torch.tensor(dims)
             dims = dims.long().to(output.device)
