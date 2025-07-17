@@ -1433,7 +1433,7 @@ if args.dataset_kaggle_replacer:
     chunk_size = 800
     for i in range(0, replacer_tensor.size(0), chunk_size):
         end = min(i + chunk_size, replacer_tensor.size(0))
-        replacer_tensor[i:end] = replacer_tensor[i:end].to('cuda')
+        replacer_tensor[i:end] = replacer_tensor_cpu[i:end].to('cuda')
 
 
 matrix = intervention_matrix(
