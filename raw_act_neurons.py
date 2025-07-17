@@ -103,10 +103,10 @@ def make_heatmap_neuron_overlap(activation_dict, k, with_label=True, method="def
     plt.figure(figsize=(18, 14))
     if with_label:
         if lang_dict:
-            sns.heatmap(overlap_matrix.numpy(), annot=True, fmt=".1f", annot_kws={"size": annot_kws}, cmap="YlOrRd", linewidths=0.3,cbar =False,
+            sns.heatmap(overlap_matrix.numpy(), annot=True, fmt=".1f", annot_kws={"size": annot_kws, "weight": "bold"}, cmap="YlOrRd", linewidths=0.3,cbar =False,
                         xticklabels=[langs_code_rev[lang_dict[i]] for i in range(k)], yticklabels=[langs_code_rev[lang_dict[i]] for i in range(k)])
         else:
-            sns.heatmap(overlap_matrix.numpy(), annot=True, fmt=".1f", annot_kws={"size": annot_kws}, cmap="YlOrRd", linewidths=0.3,cbar =False,
+            sns.heatmap(overlap_matrix.numpy(), annot=True, fmt=".1f", annot_kws={"size": annot_kws, "weight": "bold"}, cmap="YlOrRd", linewidths=0.3,cbar =False,
                         xticklabels=(range(k)), yticklabels=(range(k)))
         plt.xticks(fontsize=16)
         plt.yticks(fontsize=16)

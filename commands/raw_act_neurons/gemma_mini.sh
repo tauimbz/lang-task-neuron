@@ -4,5 +4,6 @@ python raw_act_neurons.py  \
     --ld_filename "ld_flores200" \
     --save \
     --n_layer 26 \
+    --annot_kws 14 \
     --parent_dir_to_save "" 
 # --kaggle_dataname_to_save "lsnxx-gemma2-flores" \
