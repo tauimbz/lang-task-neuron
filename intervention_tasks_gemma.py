@@ -206,6 +206,7 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
             lsn_lang = lsn_langs[target_lang]
             if lsn_lang[layer].numel() == 0:
                 return
+            B, T, _ = output.shape 
             # output[:, :, lsn_lang[layer].long()] = replacer_tensor[target_lang][layer][lsn_lang[layer]].to(output.dtype)
             
             # dims = lsn_lang[layer].long().to(output.device)  # [H']
@@ -217,8 +218,11 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
 
             # replacer_tensor[target_lang][layer] = replacer_tensor[target_lang][layer].to(output.device)
             replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
-            mask = attn_mask.to(output.device).unsqueeze(-1)  # [B, T, 1]
-            
+            mask = attn_mask.to(output.device)
+            if mask.shape[1] != T:
+                mask = mask[:, -T:]  # truncate to match generated output length
+            mask = mask.unsqueeze(-1).expand(B, T, len(dims))  # [B, T, H']
+
             
             output_selected = output[:, :, dims]  # [B, T, H']
             mask = mask.expand_as(output_selected) 
