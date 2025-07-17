@@ -174,7 +174,8 @@ def make_patched_forward(
     target_lang, operation_non_target, operation_target, attn_mask
 ):
     def patched_forward(self, x):
-        output = GELUActivation.forward(self, x)  # call original
+        # output = GELUActivation.forward(self, x)  # call original
+        output = super(GELUActivation, self).forward(x)
         layer = int(name)
 
         if replacer_tensor is not None:
