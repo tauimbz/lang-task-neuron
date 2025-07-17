@@ -1073,7 +1073,7 @@ def HF_infer_dataset(
                     batched_continuations.append(refs)
                  
                 inputs, attn_mask, input_len = tokenize_translation(batched_prompts)
-                
+                print(f"intervensi {lang}, target_lang: {target_lang}")
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
                     clean_hooks(model)
