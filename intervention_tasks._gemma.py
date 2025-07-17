@@ -170,71 +170,71 @@ def clean_hooks(infer_model):
 
 # original_forward = GELUActivation.forward
 
-def make_custom_gelu(
-    replace_method, replacer_tensor, model_name, name, lsn_langs,
-    target_lang, operation_non_target, operation_target, attn_mask
-):
-    class PatchedGELU(GELUActivation):
-        def __call__(self, x):
-            # Call original GELU
-            output = super().__call__(x)
+# def make_custom_gelu(
+#     replace_method, replacer_tensor, model_name, name, lsn_langs,
+#     target_lang, operation_non_target, operation_target, attn_mask
+# ):
+#     class PatchedGELU(GELUActivation):
+#         def __call__(self, x):
+#             # Call original GELU
+#             output = super().__call__(x)
 
-            layer = int(name)
-            if replacer_tensor is not None:
-                lsn_lang = lsn_langs[target_lang]
-                if lsn_lang[layer].numel() == 0:
-                    return output
+#             layer = int(name)
+#             if replacer_tensor is not None:
+#                 lsn_lang = lsn_langs[target_lang]
+#                 if lsn_lang[layer].numel() == 0:
+#                     return output
 
-                dims = lsn_lang[layer].long().to(output.device)
-                layer_tensor = replacer_tensor[target_lang][layer].to(output.device)
-                replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
+#                 dims = lsn_lang[layer].long().to(output.device)
+#                 layer_tensor = replacer_tensor[target_lang][layer].to(output.device)
+#                 replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
 
-                mask = attn_mask.to(output.device).unsqueeze(-1)
-                output_selected = output[:, :, dims]
-                replacement_broadcasted = replacement_values.view(1, 1, -1)
+#                 mask = attn_mask.to(output.device).unsqueeze(-1)
+#                 output_selected = output[:, :, dims]
+#                 replacement_broadcasted = replacement_values.view(1, 1, -1)
 
-                output[:, :, dims] = torch.where(
-                    mask.bool(),
-                    replacement_broadcasted.expand_as(output_selected),
-                    output_selected
-                )
-                print(f"[Patched GELU layer {layer}] Intervention applied.")
-            return output
+#                 output[:, :, dims] = torch.where(
+#                     mask.bool(),
+#                     replacement_broadcasted.expand_as(output_selected),
+#                     output_selected
+#                 )
+#                 print(f"[Patched GELU layer {layer}] Intervention applied.")
+#             return output
 
-    return PatchedGELU()
+#     return PatchedGELU()
 
-def make_patched_forward(
-    replace_method, replacer_tensor, model_name, name, lsn_langs,
-    target_lang, operation_non_target, operation_target, attn_mask
-):
-    def patched_forward(self, x):
-        # output = GELUActivation.forward(self, x)  # call original
-        output = super(GELUActivation, self).forward(x)
-        layer = int(name)
+# def make_patched_forward(
+#     replace_method, replacer_tensor, model_name, name, lsn_langs,
+#     target_lang, operation_non_target, operation_target, attn_mask
+# ):
+#     def patched_forward(self, x):
+#         # output = GELUActivation.forward(self, x)  # call original
+#         output = super(GELUActivation, self).forward(x)
+#         layer = int(name)
 
-        if replacer_tensor is not None:
-            lsn_lang = lsn_langs[target_lang]
-            if lsn_lang[layer].numel() == 0:
-                return output
+#         if replacer_tensor is not None:
+#             lsn_lang = lsn_langs[target_lang]
+#             if lsn_lang[layer].numel() == 0:
+#                 return output
 
-            dims = lsn_lang[layer].long().to(output.device)
-            layer_tensor = replacer_tensor[target_lang][layer].to(output.device)
-            replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
+#             dims = lsn_lang[layer].long().to(output.device)
+#             layer_tensor = replacer_tensor[target_lang][layer].to(output.device)
+#             replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
 
-            mask = attn_mask.to(output.device).unsqueeze(-1)
-            output_selected = output[:, :, dims]
-            replacement_broadcasted = replacement_values.view(1, 1, -1)
+#             mask = attn_mask.to(output.device).unsqueeze(-1)
+#             output_selected = output[:, :, dims]
+#             replacement_broadcasted = replacement_values.view(1, 1, -1)
 
-            output[:, :, dims] = torch.where(
-                mask.bool(),
-                replacement_broadcasted.expand_as(output_selected),
-                output_selected
-            )
-            print(f"[Intervention applied at layer {layer}]")
+#             output[:, :, dims] = torch.where(
+#                 mask.bool(),
+#                 replacement_broadcasted.expand_as(output_selected),
+#                 output_selected
+#             )
+#             print(f"[Intervention applied at layer {layer}]")
 
-        return output
+#         return output
 
-    return patched_forward
+#     return patched_forward
 
 # def patched_fw(input, replace_method, replacer_tensor, model_name, name, lsn_langs, target_lang, operation_non_target, operation_target, start_idx=None, attn_mask=None): 
 #     """
@@ -1320,7 +1320,7 @@ def HF_infer_dataset(
             # cleanup
             for handler in handlers:
                 handler.remove()
-            clean_monkey(model)
+            # clean_monkey(model)
             clean_hooks(model)
                 
         if eval_type == "EVAL_TASK":
