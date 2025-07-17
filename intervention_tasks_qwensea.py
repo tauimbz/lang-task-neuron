@@ -212,7 +212,7 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
             
             # dims = lsn_lang[layer].long().to(output.device)  # [H']
             dims = lsn_lang[layer]
-            print(f"max. dims: {dims}")
+            # print(f"max. dims: {dims}")
             if not isinstance(dims, torch.Tensor):
                 dims = torch.tensor(dims)
             dims = dims.long().to(output.device)
@@ -1083,10 +1083,10 @@ def HF_infer_dataset(
                     # assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.append(src)
                     batched_continuations.append(refs)
-                print(f"batched_prompts: {batched_prompts}")
+                # print(f"batched_prompts: {batched_prompts}")
                 inputs, attn_mask, input_len = tokenize_translation(batched_prompts)
-                print(f"intervensi {lang}, target_lang: {target_lang}")
-                print(f"inputs: {inputs}")
+                # print(f"intervensi {lang}, target_lang: {target_lang}")
+                # print(f"inputs: {inputs}")
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
                     clean_hooks(model)
