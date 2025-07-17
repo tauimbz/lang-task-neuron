@@ -842,7 +842,7 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         lang_code = lang_target.split("_", 1)[-1]
         lang_text = map_language(lang_code)
         # source = f"Translate the following from English to {lang_text}. English: {choices[0]}.\n{lang_text}: "
-        source = f"Translate from English to {lang_text}.\n\nEnglish: {choices[0]}\n{lang_text}:"
+        source = f"Translate from English to {lang_text}.\n\nEnglish: {choices[0]}\n{lang_text}: "
         # source = f"English phrase: {choices[0]}\n\n{lang_text} phrase:"
         # [choices[0]] is sentence in eng_Latn
         #  choices[1] is sentence from the target language
@@ -869,7 +869,9 @@ def HF_make_df_per_lang(rows, prompt, eval_type, option_log_probs=None, pred_log
 
 def tokenize_translation(source_texts):
     # Tokenize input
-    inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True,padding_side="left")
+    inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
+
+    # inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True,padding_side="left")
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
     input_len = inputs["input_ids"].shape[1]
     attn_mask = inputs["attention_mask"]
