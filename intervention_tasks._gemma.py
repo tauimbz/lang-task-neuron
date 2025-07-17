@@ -169,6 +169,40 @@ def clean_hooks(infer_model):
         mlp.act_fn._forward_hooks.clear()
 
 original_forward = GELUActivation.forward
+
+def make_custom_gelu(
+    replace_method, replacer_tensor, model_name, name, lsn_langs,
+    target_lang, operation_non_target, operation_target, attn_mask
+):
+    class PatchedGELU(GELUActivation):
+        def __call__(self, x):
+            # Call original GELU
+            output = super().__call__(x)
+
+            layer = int(name)
+            if replacer_tensor is not None:
+                lsn_lang = lsn_langs[target_lang]
+                if lsn_lang[layer].numel() == 0:
+                    return output
+
+                dims = lsn_lang[layer].long().to(output.device)
+                layer_tensor = replacer_tensor[target_lang][layer].to(output.device)
+                replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
+
+                mask = attn_mask.to(output.device).unsqueeze(-1)
+                output_selected = output[:, :, dims]
+                replacement_broadcasted = replacement_values.view(1, 1, -1)
+
+                output[:, :, dims] = torch.where(
+                    mask.bool(),
+                    replacement_broadcasted.expand_as(output_selected),
+                    output_selected
+                )
+                print(f"[Patched GELU layer {layer}] Intervention applied.")
+            return output
+
+    return PatchedGELU()
+
 def make_patched_forward(
     replace_method, replacer_tensor, model_name, name, lsn_langs,
     target_lang, operation_non_target, operation_target, attn_mask
@@ -1148,8 +1182,9 @@ def HF_infer_dataset(
                 if intervention:
                     for i in range_layers:  # or `for i, layer in enumerate(model.model.layers)`
                         layer = model.model.model.layers[i]
-                        act_fn = layer.mlp.act_fn
-                        patched = make_patched_forward(
+                        mlp = model.model.model.layers[i].mlp
+
+                        custom_gelu = make_custom_gelu(
                             replace_method=replace_method,
                             replacer_tensor=replacer_tensor,
                             model_name=model.model_name,
@@ -1160,7 +1195,21 @@ def HF_infer_dataset(
                             operation_target=operation_target,
                             attn_mask=attn_mask,
                         )
-                        act_fn.forward = MethodType(patched, act_fn)
+
+                        mlp.act_fn = custom_gelu
+                        # act_fn = layer.mlp.act_fn
+                        # patched = make_patched_forward(
+                        #     replace_method=replace_method,
+                        #     replacer_tensor=replacer_tensor,
+                        #     model_name=model.model_name,
+                        #     name=f"{i}",
+                        #     lsn_langs=lsn_langs,
+                        #     target_lang=target_lang,
+                        #     operation_non_target=operation_non_target,
+                        #     operation_target=operation_target,
+                        #     attn_mask=attn_mask,
+                        # )
+                        # act_fn.forward = MethodType(patched, act_fn)
                     # for idx, layer in enumerate(model.model.model.layers):
                     #     if isinstance(layer.mlp.act_fn, GELUActivation):
                     #         act_fn = layer.mlp.act_fn
