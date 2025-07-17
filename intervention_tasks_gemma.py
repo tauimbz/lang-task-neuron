@@ -892,7 +892,12 @@ def generate_translation(inputs, input_len, model, max_new_tokens=50):
     torch._dynamo.config.cache_size_limit = 1
     # Generate output
     with no_compile():
-        outputs = model.model.generate(**inputs, max_new_tokens=max_new_tokens)
+        outputs = model.model.generate(**inputs, 
+                                   do_sample=False,
+                    temperature=None,
+                    top_p=None,
+                    top_k=None, 
+                                   max_new_tokens=max_new_tokens)
     generated_only = outputs[:, input_len:]
 
     # Decode only the new tokens (i.e., the translation)
