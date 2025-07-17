@@ -208,7 +208,11 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
                 return
             # output[:, :, lsn_lang[layer].long()] = replacer_tensor[target_lang][layer][lsn_lang[layer]].to(output.dtype)
             
-            dims = lsn_lang[layer].long().to(output.device)  # [H']
+            # dims = lsn_lang[layer].long().to(output.device)  # [H']
+            dims = lsn_lang[layer]
+            if not isinstance(dims, torch.Tensor):
+                dims = torch.tensor(dims)
+            dims = dims.long().to(output.device)
             layer_tensor = replacer_tensor[target_lang][layer].to(output.device)  # ensure correct device
 
             # replacer_tensor[target_lang][layer] = replacer_tensor[target_lang][layer].to(output.device)
