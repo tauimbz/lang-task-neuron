@@ -4,7 +4,7 @@ python overlap_heatmap.py  \
     --ld_filename "lang_dict" \
     --save \
     --n_layer 24 \
-    --annot_kws 16 \
+    --annot_kws 20 \
     --n_neurons 4864 \
     --parent_dir_to_save "" 
 # --kaggle_dataname_to_save "lsnxx-qwen05-flores" \

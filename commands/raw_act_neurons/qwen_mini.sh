@@ -4,6 +4,6 @@ python raw_act_neurons.py  \
     --ld_filename "ld_flores200" \
     --save \
     --n_layer 24 \
-    --annot_kws 16 \
+    --annot_kws 20 \
     --parent_dir_to_save "" 
 # --kaggle_dataname_to_save "lsnxx-qwen05-flores" \
