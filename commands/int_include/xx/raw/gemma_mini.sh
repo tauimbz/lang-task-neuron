@@ -1,6 +1,6 @@
 python intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-gemma2-flores" \
-    --lsn_filename "gemma2_flores" \
+    --lsn_filename "raw_act_lsn_gemma2.pt" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activationxx-gemma2-neurons" \
     --replacer_filename "max.pt" \
@@ -12,7 +12,7 @@ python intervention_tasks.py \
     --operation_non_target ".1" \
     --operation_target "=10" \
     --metrics "acc" \
-    --kaggle_dataname_to_save "accxx-include-lape" \
+    --kaggle_dataname_to_save "accxx-include-lape-raw" \
     --parent_dir_to_save "" \
     --selected_langs "Dutch" "Indonesian" "Malay" "Vietnamese" "Japanese" "Chinese" "French" "Portuguese" "Russian" "Estonian" "Italian"  "Tamil" "Turkish" \
     --target_langs 1 2 3 4 5 6 7 8 9 10 12 15 17 \
