@@ -4,5 +4,6 @@ python overlap_heatmap.py  \
     --ld_filename "lang_dict" \
     --save \
     --n_layer 28 \
+    --annot_kws 16 \
     --n_neurons 18944 \
     --parent_dir_to_save "" 

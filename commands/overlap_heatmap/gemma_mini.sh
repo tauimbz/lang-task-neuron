@@ -5,4 +5,5 @@ python overlap_heatmap.py  \
     --save \
     --n_layer 26 \
     --n_neurons 9216 \
+    --annot_kws 16 \
     --parent_dir_to_save "" 
