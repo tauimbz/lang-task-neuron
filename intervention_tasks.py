@@ -1066,7 +1066,7 @@ def HF_infer_dataset(
                 
                 
                 batched_continuations = list(zip(*batched_continuations))
-                print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
+                # print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
                 bleu = sacrebleu.corpus_bleu(candidates, batched_continuations)
                 print(f"bleu: {bleu}")
                 result_per_lang['gold'].append(bleu.score)
