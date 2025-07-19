@@ -1,5 +1,5 @@
 transformers
-datasets
+datasets==2.17.0
 huggingface_hub[hf_xet]
 scikit-learn
 kaggle
