@@ -25,9 +25,14 @@ class InferenceModel:
         self.device = torch.device(f"cuda:{gpu_id}")
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="balanced_low_0", offload_buffers=True)
+        # self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="balanced_low_0", offload_buffers=True)
         # self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
-        self.model.to(self.device)
+        # self.model.to(self.device)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            device_map={ "": self.device.index },  # explicitly map the whole model
+            offload_buffers=False                  # assume full model fits
+        )
         self.num_layers = self.get_num_layers()
         self.intermediate_size = self.get_inter_size()
         self.model.eval()
