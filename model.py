@@ -7,32 +7,15 @@ torch.cuda.manual_seed_all(42)
 set_seed(42)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-import subprocess
-
-
-def get_freest_gpu():
-    output = subprocess.check_output(
-        ["nvidia-smi", "--query-gpu=memory.free", "--format=csv,nounits,noheader"]
-    )
-    memory_free = [int(x) for x in output.decode("utf-8").strip().split('\n')]
-    return int(torch.tensor(memory_free).argmax())
 
 class InferenceModel:
     def __init__(self, model_name):
         torch.cuda.empty_cache()
         torch.cuda.ipc_collect()
-        gpu_id = get_freest_gpu()
-        self.device = torch.device(f"cuda:{gpu_id}")
         self.model_name = model_name
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        # self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="balanced_low_0", offload_buffers=True)
-        # self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
-        # self.model.to(self.device)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            device_map={ "": self.device.index },  # explicitly map the whole model
-            offload_buffers=False                  # assume full model fits
-        )
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", offload_buffers=True)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
         self.num_layers = self.get_num_layers()
         self.intermediate_size = self.get_inter_size()
         self.model.eval()
