@@ -17,19 +17,19 @@ from data_sets import map_language
 import sacrebleu
 import os
 from contextlib import contextmanager
-# import torch._dynamo
+import torch._dynamo
 
-# @contextmanager
-# def no_compile():
-#     torch._dynamo.disable()
-#     yield
-# # Disable torch.compile entirely
-# torch.compile = lambda model, *args, **kwargs: model
+@contextmanager
+def no_compile():
+    torch._dynamo.disable()
+    yield
+# Disable torch.compile entirely
+torch.compile = lambda model, *args, **kwargs: model
 
-# # Disable Dynamo entirely
-# torch._dynamo.config.suppress_errors = True
-# torch._dynamo.config.capture_scalar_outputs = False
-# torch._dynamo.disable()
+# Disable Dynamo entirely
+torch._dynamo.config.suppress_errors = True
+torch._dynamo.config.capture_scalar_outputs = False
+torch._dynamo.disable()
 
 # from contextlib import contextmanager
 # import torch._dynamo
@@ -203,7 +203,6 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
         start_id_to_intv = 0
         layer = int(name)
         if replacer_tensor is not None:
-            # print(f"max. ")
             lsn_lang = lsn_langs[target_lang]
             if lsn_lang[layer].numel() == 0:
                 return
@@ -212,7 +211,6 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
             
             # dims = lsn_lang[layer].long().to(output.device)  # [H']
             dims = lsn_lang[layer]
-            # print(f"max. dims: {dims}")
             if not isinstance(dims, torch.Tensor):
                 dims = torch.tensor(dims)
             dims = dims.long().to(output.device)
@@ -844,9 +842,8 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         lang_code = lang_target.split("_", 1)[-1]
         lang_text = map_language(lang_code)
         # source = f"Translate the following from English to {lang_text}. English: {choices[0]}.\n{lang_text}: "
-        source = f"Translate from English to {lang_text}.\n\nEnglish: {choices[0]}\n{lang_text}: "
-        # source = f"Translate from English into target language.\nEnglish: {choices[0]}\nTarget language: "
-        # source = f"Translate from English.\n\nEnglish: {choices[0]}\nTranslation: "
+        source = f"Translate from English to {lang_text}.\n\nEnglish: {choices[0]}\n{lang_text}:"
+        # source = f"Translate from English into the target language.\n\nEnglish: {choices[0]}\nTarget language: "
 
         # source = f"English phrase: {choices[0]}\n\n{lang_text} phrase:"
         # [choices[0]] is sentence in eng_Latn
@@ -874,8 +871,6 @@ def HF_make_df_per_lang(rows, prompt, eval_type, option_log_probs=None, pred_log
 
 def tokenize_translation(source_texts):
     # Tokenize input
-    # inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
-
     inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True,padding_side="left")
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
     input_len = inputs["input_ids"].shape[1]
@@ -891,13 +886,13 @@ def generate_translation(inputs, input_len, model, max_new_tokens=50):
     # inputs = model.tokenizer(source_texts, return_tensors="pt", padding=True, truncation=True)
     # inputs = {k: v.to(model.device) for k, v in inputs.items()}
     # input_len = inputs["input_ids"].shape[1]
-    # import torch._dynamo
-    # torch._dynamo.reset()
-    # torch._dynamo.config.suppress_errors = True
-    # torch._dynamo.config.cache_size_limit = 1
+    import torch._dynamo
+    torch._dynamo.reset()
+    torch._dynamo.config.suppress_errors = True
+    torch._dynamo.config.cache_size_limit = 1
     # Generate output
-    # with no_compile():
-    outputs = model.model.generate(**inputs, 
+    with no_compile():
+        outputs = model.model.generate(**inputs, 
                                    do_sample=False,
                     temperature=None,
                     top_p=None,
@@ -1083,10 +1078,9 @@ def HF_infer_dataset(
                     # assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.append(src)
                     batched_continuations.append(refs)
-                # print(f"batched_prompts: {batched_prompts}")
+                 
                 inputs, attn_mask, input_len = tokenize_translation(batched_prompts)
-                # print(f"intervensi {lang}, target_lang: {target_lang}")
-                # print(f"inputs: {inputs}")
+                
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
                     clean_hooks(model)
