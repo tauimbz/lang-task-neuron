@@ -8,6 +8,7 @@ python3 get_activations.py  \
     --batch_size 16 \
     --kaggle_dataname_to_save "activation-xwin-qwen7-neurons" \
     --parent_dir_to_save "" \
+    --is_update \
     > log_qwen7.txt 2>&1
     # --max_instances 200 \
     # --is_update \

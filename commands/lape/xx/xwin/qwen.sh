@@ -5,5 +5,6 @@ python lape.py  \
     --model_name_inf "qwen7" \
     --dataset_name_inf "flores" \
     --kaggle_dataname_to_save "lsnxx-qwen7-xwinograd" \
+    --is_update \
     > qwen_lapexx.txt 2>&1
 
