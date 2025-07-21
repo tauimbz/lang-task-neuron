@@ -226,7 +226,9 @@ def get_neurons(
         cleanup()
         over_zeros_dict["lang"] = lang
         language_dict[n_lang] = lang 
-        ds = load_dataset(dataset_name, lang, split=split, trust_remote_code=True, cache_dir=f"{parent_dir}/data/hf_datasets")
+        # ds = load_dataset(dataset_name, lang, split=split, trust_remote_code=True, cache_dir=f"{parent_dir}/data/hf_datasets")
+        ds = load_dataset(dataset_name, lang, split=split, trust_remote_code=True)
+
         dataset_instance = dataset_instance = Dataset(dataset_name, ds)
         if dataset_name.endswith("massive"):
             dataset_instance = Massive(dataset_name, ds)
