@@ -1,6 +1,6 @@
 python intervention_tasks.py \
     --dataset_kaggle "inayarahmanisa/lsnxx-qwen7-xwinograd" \
-    --lsn_filename "qwen7_xwinograd" \
+    --lsn_filename "qwen7_flores" \
     --ld_filename "lang_dict" \
     --dataset_kaggle_replacer "inayarahmanisa/activation-xwin-qwen7-neurons" \
     --replacer_filename "max.pt" \
