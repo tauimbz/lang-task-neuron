@@ -1,0 +1,20 @@
+python intervention_tasks.py \
+    --dataset_kaggle "inayarahmanisa/lsnxx-qwen05-flores" \
+    --lsn_filename "qwen05_flores" \
+    --ld_filename "lang_dict" \
+    --dataset_kaggle_replacer "inayarahmanisa/activationxx-qwen05-neurons" \
+    --replacer_filename "median.pt" \
+    --model_name "Qwen/Qwen2.5-0.5B-Instruct" \
+    --dataset_name "facebook/flores" \
+    --split devtest \
+    --replace_method fixed \
+    --operation_non_target ".1" \
+    --operation_target "=10" \
+    --metrics "ppl_full" \
+    --kaggle_dataname_to_save "ppl-flores-pmed" \
+    --parent_dir_to_save "" \
+    --selected_langs "eng_Latn" "nld_Latn" "ind_Latn" "zsm_Latn" "vie_Latn" "jpn_Jpan" "zho_Hans" "fra_Latn" "por_Latn" "rus_Cyrl" "est_Latn" "hat_Latn" "ita_Latn" "quy_Latn" "swh_Latn" "tam_Taml" "tha_Thai" "tur_Latn" \
+    --target_langs 0 1 2 3 4 5 6  7 8 9 10 11 12 13 14 15 16 17 \
+    --is_update \
+    --batch_size 8 \
+    > qwen_ppl_lape.txt 2>&1

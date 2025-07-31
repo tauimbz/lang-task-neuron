@@ -1,0 +1,20 @@
+python intervention_tasks.py \
+    --dataset_kaggle "inayarahmanisa/lsnxx-gemma9-flores" \
+    --lsn_filename "raw_act_lsn_gemma9.pt" \
+    --ld_filename "lang_dict" \
+    --dataset_kaggle_replacer "inayarahmanisa/activationxx-gemma9-flores" \
+    --replacer_filename "max.pt" \
+    --model_name "google/gemma-2-9b-it" \
+    --dataset_name "CohereLabs/include-lite-44" \
+    --split test \
+    --replace_method fixed \
+    --operation_non_target ".1" \
+    --operation_target "=10" \
+    --metrics "acc" \
+    --kaggle_dataname_to_save "accxx-include-raw" \
+    --parent_dir_to_save "" \
+    --selected_langs "Dutch" "Indonesian" "Malay" "Vietnamese" "Japanese" "Chinese" "French" "Portuguese" "Russian" "Estonian" "Italian"  "Tamil" "Turkish" \
+    --target_langs 1 2 3 4 5 6 7 8 9 10 12 15 17 \
+    --is_update \
+    --batch_size 32 \
+    > gemma_includexx.txt 2>&1

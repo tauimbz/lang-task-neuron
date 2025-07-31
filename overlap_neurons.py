@@ -22,18 +22,6 @@ parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="D
 
 args = parser.parse_args()
 
-#MODIF
-# args, unknown = parser.parse_known_args()
-# args.data_kaggle_result = "inayarahmanisa/lsn2-sea1-5-flores"
-# args.lape_filename = "sea1-5_flores"
-# args.res_filename = "result_sea1-5_flores.pt"
-# args.n_layer = 28
-# args.model_name_inf = "sea1-5" 
-# args.dataset_name_inf = "flores"
-# args.kaggle_dataname_to_save = "lsn2-sea1-5-flores"
-# # args.maximum = 675
-# args.lape_filename = "maplape.pt"
-#END MODIF
 
 
 

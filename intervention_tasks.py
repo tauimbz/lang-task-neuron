@@ -16,7 +16,20 @@ import xwinograd_utils
 from data_sets import map_language
 import sacrebleu
 import os
+from contextlib import contextmanager
+import torch._dynamo
 
+@contextmanager
+def no_compile():
+    torch._dynamo.disable()
+    yield
+# Disable torch.compile entirely
+torch.compile = lambda model, *args, **kwargs: model
+
+# Disable Dynamo entirely
+torch._dynamo.config.suppress_errors = True
+torch._dynamo.config.capture_scalar_outputs = False
+torch._dynamo.disable()
 
 # from contextlib import contextmanager
 # import torch._dynamo
@@ -193,18 +206,26 @@ def set_activation_mlp_v2(replace_method, replacer_tensor, model_name, name, lsn
             lsn_lang = lsn_langs[target_lang]
             if lsn_lang[layer].numel() == 0:
                 return
+            B, T, _ = output.shape 
             # output[:, :, lsn_lang[layer].long()] = replacer_tensor[target_lang][layer][lsn_lang[layer]].to(output.dtype)
             
-            dims = lsn_lang[layer].long().to(output.device)  # [H']
+            # dims = lsn_lang[layer].long().to(output.device)  # [H']
+            dims = lsn_lang[layer]
+            if not isinstance(dims, torch.Tensor):
+                dims = torch.tensor(dims)
+            dims = dims.long().to(output.device)
             layer_tensor = replacer_tensor[target_lang][layer].to(output.device)  # ensure correct device
 
             # replacer_tensor[target_lang][layer] = replacer_tensor[target_lang][layer].to(output.device)
             replacement_values = layer_tensor[dims].to(dtype=output.dtype, device=output.device)
-            mask = attn_mask.to(output.device).unsqueeze(-1)  # [B, T, 1]
+            mask = attn_mask.to(output.device)
+            if mask.shape[1] != T:
+                mask = mask[:, -T:]  # truncate to match generated output length
+            mask = mask.unsqueeze(-1).expand(B, T, len(dims))  # [B, T, H']
 
             
             output_selected = output[:, :, dims]  # [B, T, H']
-            
+            mask = mask.expand_as(output_selected) 
             # [H'] -> [1, 1, H'] so it can broadcast across B and T
             replacement_broadcasted = replacement_values.view(1, 1, -1)
             
@@ -524,8 +545,6 @@ def calc_logprob_same_options(model, input_ids, attention_mask, prompts, choices
         outputs = model.model(input_ids=input_ids, attention_mask=attention_mask)
         logits = outputs.logits  # shape: (batch, seq_len, vocab_size)
 
-    # We need the logits at the last token (i.e., position before model should generate the answer)
-    # Compute index of the last non-padding token for each sequence
     last_token_indices = attention_mask.sum(dim=1) - 1  # shape: (batch,)
 
     # Get logits for the position where the model would generate next
@@ -548,9 +567,6 @@ def calc_logprob_same_options(model, input_ids, attention_mask, prompts, choices
         index_pred = choices.index(pred)
         preds.append( index_pred)
 
-    # Print results
-    # for i, (lp, pred) in enumerate(results):
-    #     print(f"Prompt {i+1}: prediction = {pred}, logprobs = {lp}")
 
     return preds
 
@@ -635,7 +651,7 @@ def calc_perplexity_batch(
     return perplexities
 
 
-def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, dod_baselang= None, dod_languages=None):
+def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, dod_baselang= None, dod_languages=None, targeted=False):
     """
     Input:
     - ds: return of load_dataset(), get special configuration for some dataset e.g intents_set. 
@@ -763,18 +779,9 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
     gold_log_prob = tuple()
     if eval_type == "DOD_NINT":
         assert dod_lang_dict, "dod_lang_dict should be defined"
-        # difflogprob_per_lang = dict()
-        # gold_log_prob = 0
-        # print(f"dod_lang_dict: {dod_lang_dict}")
+        
         return choices, premise, correct_idx, is_generate
-        # for idx, option in enumerate(choices):
-        #     logprob = calculate_logprob(model, premise, option, is_generate)
-        #     if idx == correct_idx:
-        #         gold_log_prob = logprob
-        #         difflogprob_per_lang[dod_lang_dict[idx]] = 0
-        #     else:
-        #         difflogprob_per_lang[dod_lang_dict[idx]] = logprob - gold_log_prob
-        # return difflogprob_per_lang
+        
         
     if eval_type == "DOD_INT":
         assert dod_lang_dict, "dod_lang_dict should be defined"
@@ -785,32 +792,13 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         # print(f"dod_lang_dict: {dod_lang_dict}")
         difference = 0
         return choices, premise, correct_idx, is_generate
-        # for idx, option in enumerate(choices):
-        #     logprob = calculate_logprob(model, premise, option, is_generate)
-        #     if idx == correct_idx:
-        #         gold_log_prob = logprob
-        #     else:
-        #         difference = logprob - gold_log_prob 
-        #     # seq_log_probs = calc_logprob_answer(text, option, model, is_generate)
-        # return difference
+        
             
     if eval_type == "EVAL_TASK":
         assert num_choices, "num_choices must be defined"
         return choices, target, is_generate, correct_idx, num_choices, gold
         
             
-        # for idx, option in enumerate(choices):
-        #     seq_log_probs = calculate_logprob(model, choices[idx], target, is_generate) 
-        #     # seq_log_probs = calc_logprob_answer(text, option, model, is_generate)
-        #     if option.lower() == gold.lower():
-        #         gold_log_prob = (idx, seq_log_probs)
-        #     option_log_probs.append((idx, option, seq_log_probs))
-        #     if seq_log_probs >= chosen_prob:
-        #         chosen_prob = seq_log_probs
-        #         pred_log_prob = (idx, option, seq_log_probs)
-        # assert len(pred_log_prob) == 3
-        # assert len(gold_log_prob) == 2
-        # return option_log_probs, pred_log_prob, gold_log_prob
     elif eval_type.startswith("EVAL_PPL_FULL"):
         assert correct_sentence
         return eval_type, choices[correct_idx], target, is_generate
@@ -820,14 +808,15 @@ def HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate, d
         ref = choices[1]
         lang_code = lang_target.split("_", 1)[-1]
         lang_text = map_language(lang_code)
-        # source = f"Translate the following from English to {lang_text}. English: {choices[0]}.\n{lang_text}: "
-        source = f"Translate from English to {lang_text}.\n\nEnglish: {choices[0]}\n{lang_text}:"
+        if targeted:
+            source = f"Translate from English to {lang_text}.\n\nEnglish: {choices[0]}\n{lang_text}:"
+        else:
+            source = f"Translate from English into the target language.\n\nEnglish: {choices[0]}\nTarget language: "
 
+        # source = f"English phrase: {choices[0]}\n\n{lang_text} phrase:"
         # [choices[0]] is sentence in eng_Latn
         #  choices[1] is sentence from the target language
         return eval_type, source, [ref], is_generate
-        # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
-        # return perplexity_gold
         
 def HF_make_df_per_lang(rows, prompt, eval_type, option_log_probs=None, pred_log_prob=None, gold_log_prob=None):
     row = dict()
@@ -868,8 +857,13 @@ def generate_translation(inputs, input_len, model, max_new_tokens=50):
     torch._dynamo.config.suppress_errors = True
     torch._dynamo.config.cache_size_limit = 1
     # Generate output
-    # with no_compile():
-    outputs = model.model.generate(**inputs, max_new_tokens=max_new_tokens)
+    with no_compile():
+        outputs = model.model.generate(**inputs, 
+                                   do_sample=False,
+                    temperature=None,
+                    top_p=None,
+                    top_k=None, 
+                                   max_new_tokens=max_new_tokens)
     generated_only = outputs[:, input_len:]
 
     # Decode only the new tokens (i.e., the translation)
@@ -881,7 +875,7 @@ def HF_infer_dataset(
         model, dataset_name, dataset_relations=None, langs=None, max_samples=None, is_generate=False,
         apply_template=True, batch_size=None,
         intervention = False, replace_method=None, replacer_tensor=None, lsn_langs = [], target_lang=None, operation_non_target="*1", operation_target="*1", range_layers=[1], lsn_languages={},
-        split="test", show_df_per_lang=False, metrics=None, scenario=None, selected_langs = None, gold_difference = None, noncross=False):
+        split="test", show_df_per_lang=False, metrics=None, scenario=None, selected_langs = None, gold_difference = None, noncross=False, targeted=False):
     """
     model:InferenceModel
     intervention: list of languages want to be intervened
@@ -889,16 +883,7 @@ def HF_infer_dataset(
     split:train, test
     """
     handlers = []
-    # if intervention:
-        # # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
-        # clean_hooks(model)
-        # for i in (range_layers):
-        #     mlp = model.model.model.layers[i].mlp
-        #     handlers.append(mlp.act_fn.register_forward_hook(
-        #         set_activation_mlp_v2(
-        #             replace_method=replace_method, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
-        #             target_lang=target_lang, operation_non_target=operation_non_target, 
-        #             operation_target=operation_target, lsn_languages=lsn_languages)))
+    
     eval_type = ""
     if "ppl_full" in metrics :
         eval_type = "EVAL_PPL_FULL"
@@ -944,33 +929,22 @@ def HF_infer_dataset(
         max_samples = min(max_instances, len(ds)) if max_instances else len(ds)
         
         batch_size = batch_size if batch_size else 1
-        # if intervention:
-        #     print(f"lang.split('_')[1]: {lang.split('-')[1]}")
-        #     print(f"lsn_languages.idx_to_lang(target_lang): {lsn_languages.idx_to_lang(target_lang)}")
+        
         if intervention and noncross and lang.split("-")[1] != lsn_languages.idx_to_lang(target_lang):
-            # print(f"lang: {lang}, target_lang: {target_lang}")
+            
             eval_result[lang] = [0 for i in range(max_samples)]
-            # result_per_lang['gold'] = [0 for i in range(max_samples)]
+            
             continue
 
 
 
 
-
-
-        # dataset_loader = DataLoader(ds, batch_size=batch_size)
-        # print(f"batch_size: {batch_size}")
-        # samples = 0
-        # for i, datas in enumerate(tqdm(dataset_loader, desc=f"Processing {lang} Examples", leave=False)):
         for start_idx in tqdm(range(0, max_samples, batch_size), desc=f"Processing {lang} Examples in batches", leave=False):
-            # print(f"max_samples: {max_samples}")
+            
             end_idx = min(start_idx + batch_size, max_samples)
-            # print(f"processing data {start_idx} to {end_idx}")
+            
             batch_data = ds.select(list(range(start_idx, end_idx)))
-            # print(f"processing data {start_idx} to {end_idx}")
-            # samples += 1
-            # print(f"data: {data}")
-            # print(f"Eval_type: {eval_type}")
+            
             clean_hooks(model)
             if eval_type == "EVAL_TASK":
                 batched_prompts = []
@@ -978,13 +952,12 @@ def HF_infer_dataset(
                 batched_correct_idx = []
                 targets_same_options = []
                 num_choices = None
-                # print(f"datas: {datas}")
+                
                 for data in batch_data:
-                    # print(f"data: {data}")
+                    
                     choices, target, is_generate, correct_idx, num_choices, _ = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
-                    # print(f"choices: {choices}\ntarget: {target}")
+                    
                     if isinstance(choices, str):
-                        # print("sampe sini")
                         batched_prompts.append(choices)
                         batched_correct_idx.append(correct_idx)
                         
@@ -997,21 +970,10 @@ def HF_infer_dataset(
                         batched_prompts.extend(choices)
                         batched_continuations.extend(target)
                         batched_correct_idx.append(correct_idx)
-                # print(f"batched_prompts: {batched_prompts}")
-                # print(f"batched_continuations: {batched_continuations}")
-                # print(f"batched_correct_idx: {batched_correct_idx}")
+                
                 
                 assert num_choices, "num choices should not be None"
-                # print(f"len(batched_prompts): {len(batched_prompts)}")
-                # print(f"len(batched_continuations): {len(batched_continuations)}")
-                # total_len = [
-                #     len(
-                #         model.tokenizer(p + " " + c, return_tensors="pt")
-                #         .to(model.device)["input_ids"][0]
-                #     )
-                #     for p, c in zip(batched_prompts, batched_continuations)
-                # ]
-                # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
+                
 
                 input_ids, attn_mask = tokenize_batch(model, batched_prompts, batched_continuations)
                 if intervention:
@@ -1045,14 +1007,14 @@ def HF_infer_dataset(
                 # print(f"datas: {datas}")
                 for data in batch_data:
                     # print(f"data: {data}")
-                    eval_type, src, refs, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
+                    eval_type, src, refs, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang, targeted=targeted)
                     # print(f"src: {src}\n refs: {refs}") # refs is a list of list
                     # assert len(choices) == len(target), "length choices and target must be the same!"
                     batched_prompts.append(src)
                     batched_continuations.append(refs)
                  
                 inputs, attn_mask, input_len = tokenize_translation(batched_prompts)
-                candidates = generate_translation(inputs, input_len, model)
+                
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
                     clean_hooks(model)
@@ -1063,56 +1025,26 @@ def HF_infer_dataset(
                                 replace_method=replace_method, replacer_tensor=replacer_tensor, model_name=model.model_name, name=f"{i}", lsn_langs=lsn_langs, 
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
-                
+                candidates = generate_translation(inputs, input_len, model)
                 
                 batched_continuations = list(zip(*batched_continuations))
                 # print(f"candidate:{candidates}, bathed_cont: {batched_continuations}")
                 bleu = sacrebleu.corpus_bleu(candidates, batched_continuations)
-                print(f"bleu: {bleu}")
+                # print(f"bleu: {bleu}")
                 result_per_lang['gold'].append(bleu.score)
-                
-            # if eval_type.startswith("EVAL_PPL"):
-            #     eval_type, choices[correct_idx], target, is_generate
-            #     perplexity = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate=is_generate)
-            #     perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
-            #     result_per_lang['gold'].append(perplexity)
-            #     if show_df_per_lang:
-            #         df_per_lang_rows = HF_make_df_per_lang(df_per_lang_rows, prompt, eval_type, gold_log_prob=perplexity)
-            # print(f"eval_type: {eval_type}")
+           
             if eval_type == "EVAL_PPL_FULL":
                 batched_prompts = []
                 batched_continuations = []
                 batched_correct_idx = []
-                # num_choices = None
-                # print(f"batch_data: {batch_data}")
-                for data in batch_data:
-                    # print(f"data: {data}")
-                    eval_type, choices, target, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
-                    # print(f"choices: {choices}\ntarget: {target}")
-                    # assert len(choices) == len(target), "length choices and target must be the same!"
-                    batched_prompts.append(choices)
-                    #batched_continuations.append(target)
-                    # batched_correct_idx.append(correct_idx)
-                # print(f"batched_prompts: {batched_prompts}")
-                # print(f"batched_continuations: {batched_continuations}")
-                # print(f"batched_correct_idx: {batched_correct_idx}")
                 
-                # assert num_choices, "num choices should not be None"
-                # print(f"len(batched_prompts): {len(batched_prompts)}")
-                # print(f"len(batched_continuations): {len(batched_continuations)}")
-                # total_len = [
-                #     len(
-                #         model.tokenizer(p + " " + c, return_tensors="pt")
-                #         .to(model.device)["input_ids"][0]
-                #     )
-                #     for p, c in zip(batched_prompts, batched_continuations)
-                # ]
-                # print(f"Max input length: {max(total_len)} | Avg: {sum(total_len) / len(total_len):.2f}")
-                # print(f"batched_prompts: {batched_prompts}, {len(batched_prompts)}")
-                #print(f"batched_continuations: {batched_continuations}, {len(batched_continuations)}")
+                for data in batch_data:
+                    eval_type, choices, target, is_generate = HF_calculate_answer(ds, data, dataset_name, model, eval_type, is_generate=is_generate, dod_baselang=lang)
+                    
+                    batched_prompts.append(choices)
+                    
                 input_ids, attn_mask = tokenize_batch(model, batched_prompts)
-                # print(f"input_ids shape: {input_ids.shape}")
-                # print(f"attn_mask shape: {attn_mask.shape}")
+                
 
                 if intervention:
                     # hook.intervensi_w_target_lang(model, "lape", lsn_langs, target_lang, max_new_tokens, operation_non_target, operation_target, range_layers)
@@ -1125,33 +1057,9 @@ def HF_infer_dataset(
                                 target_lang=target_lang, operation_non_target=operation_non_target, 
                                 operation_target=operation_target, attn_mask=attn_mask)))
                 perplexity_gold = calc_perplexity_batch(eval_type, batched_prompts, model=model, is_generate=is_generate)
-                # print(perplexity_gold)
-                # perplexity_gold = calc_perplexity_answer(eval_type, choices[correct_idx], target, model, is_generate)
-                # log_probs = calculate_logprob_batch(model, input_ids, attn_mask, batched_prompts, batched_continuations)
-                # log_probs = np.array(log_probs).reshape(len(batch_data), num_choices)
-                # predictions = log_probs.argmax(axis=1)
-                # result_per_lang['pred'].extend(predictions)
+                
                 result_per_lang['gold'].extend(perplexity_gold)
-            # if eval_type.startswith("DOD"):
-            #     if eval_type == "DOD_NINT":
-                    
-            #         dod_dict = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate, dod_baselang=lang, dod_languages=dod_languages)
-            #         assert dod_dict.keys() == non_int_dod[lang].keys(), f"the keys are notthe same! {dod_dict.keys()}, {non_int_dod[lang].keys()}"
-            #         for key in non_int_dod[lang].keys():
-            #             non_int_dod[lang][key].append(dod_dict[key]) 
-            #     else:
-            #         target_lang_dod = langs[target_lang]
-            #         # print(f"target_lang_dod: {target_lang_dod}")
-            #         difference = HF_calculate_answer(ds, data, dataset_name, model, text, eval_type, is_generate=is_generate, dod_baselang=lang, dod_languages=[lang, target_lang_dod])
-                    
-            #         result_per_lang['pred'].append(difference)
-            #         # print(f"gold_difference: {gold_difference}")
-            #         result_per_lang['gold'] = (gold_difference[lang][target_lang_dod])
-            #         # print(f"result_per_lang['gold']: {result_per_lang['gold']}")
-            # if max_samples and len(result_per_lang["gold"]) >= max_samples:
-            # if max_samples and samples >= max_samples:
-            #     break
-            # cleanup
+           
             for handler in handlers:
                 handler.remove()
             
@@ -1176,13 +1084,6 @@ def HF_infer_dataset(
             eval_result[lang] = eval_per_lang
             # print(f"intervention: {intervention}. eval_result: {eval_result}")
 
-
-        # if eval_type.startswith("DOD_NINT"):
-        #     eval_result[lang] = 0
-            
-        # if eval_type.startswith("DOD_INT"):
-        #     eval_per_lang = eval_dod(preds=result_per_lang['pred'], refs=result_per_lang['gold'])
-        #     eval_result[lang] = eval_per_lang 
 
         if show_df_per_lang:
             display(pd.DataFrame(df_per_lang_rows))
@@ -1220,7 +1121,7 @@ def intervention_matrix(
     # property intervensi
     replace_method, replacer_tensor, lsn, operation_non_target, operation_target, range_layers,target_langs=None, #target_langs dalam lang nya sesuai yg ada di lsn[1]
     # property evaluasi
-    show_df_per_lang=False, metrics=None, is_generate=False, selected_langs=None, dataset_relations=None, noncross=False, perlayer=False):
+    show_df_per_lang=False, metrics=None, is_generate=False, selected_langs=None, dataset_relations=None, noncross=False, perlayer=False, targeted=False):
         lsn_neurons, lsn_languages = lsn
         df_int_matrix = pd.DataFrame()
         gold_difference = dict()
@@ -1229,13 +1130,13 @@ def intervention_matrix(
                 model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples,is_generate=is_generate,
                 apply_template=apply_template,batch_size=batch_size,
                 intervention = False,
-                split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario="baseline", selected_langs=selected_langs)
+                split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario="baseline", selected_langs=selected_langs, targeted=targeted)
         else:
             df_int_matrix = HF_infer_dataset(
                 model=model, dataset_name=dataset_name, dataset_relations=dataset_relations, langs=langs, max_samples=max_samples,is_generate=is_generate,
                 apply_template=apply_template,batch_size=batch_size,
                 intervention = False,
-                split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario="baseline", selected_langs=selected_langs)
+                split=split, show_df_per_lang=show_df_per_lang, metrics=metrics, scenario="baseline", selected_langs=selected_langs, targeted=targeted)
         
         
         # INTERVENTION PART
@@ -1328,6 +1229,7 @@ parser.add_argument('--range_layers', nargs='+', type=int, default=None)
 parser.add_argument('--target_langs', nargs='+', type=int, default=None)
 parser.add_argument('--noncross', action='store_true')
 parser.add_argument('--perlayer', action='store_true')
+parser.add_argument('--targeted', action='store_true')
 
 
 # Property evaluasi
@@ -1338,38 +1240,9 @@ parser.add_argument('--selected_langs', nargs='+', default=None)
 parser.add_argument("--kaggle_dataname_to_save", type=str, default=None, help="Dataset name for saving to Kaggle NO USERNAME!")
 parser.add_argument("--is_update", action='store_true', help="Flag to update Kaggle dataset")
 parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent directory to save like /workspace for runpod")
-#MODIF
-args = parser.parse_args()
-# args, unknown = parser.parse_known_args()
-# from argparse import Namespace
 
-# args = Namespace(
-#     dataset_kaggle="inayarahmanisa/lsn-qwen05-flores",
-#     lsn_filename="maplape.pt",
-#     ld_filename="lang_dict",
-#     dataset_kaggle_replacer="inayarahmanisa/activation-qwen05-flores",
-#     replacer_filename="max.pt",
-#     hf_token="***REMOVED***",
-#     model_name="Qwen/Qwen2.5-0.5B-Instruct",
-#     dataset_name="cambridgeltl/xcopa",
-#     split="test",
-#     replace_method="percent",
-#     operation_non_target=".1",
-#     operation_target="=10",
-#     metrics="acc",
-#     langs=None,
-#     selected_langs=["id"],
-#     kaggle_dataname_to_save=None,
-#     is_update=False,
-#     parent_dir_to_save="",
-#     max_samples=None,
-#     show_df_per_lang=False,
-#     range_layers=None,
-#     target_langs=[0],
-#     apply_template=False,
-#     batch_size = 6
-# )
-#END MODIF
+args = parser.parse_args()
+
 
 
 
@@ -1432,7 +1305,8 @@ matrix = intervention_matrix(
     metrics=args.metrics,
     selected_langs=args.selected_langs,
     noncross=args.noncross,
-    perlayer = perlayer
+    perlayer = perlayer,
+    targeted=args.targeted
 )
 
 path_res = f"{parent_dir}res/{args.lsn_filename}"

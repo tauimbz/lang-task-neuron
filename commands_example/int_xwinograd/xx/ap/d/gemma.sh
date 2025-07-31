@@ -1,0 +1,16 @@
+python intervention_dod.py \
+    --dataset_kaggle "inayarahmanisa/lsnxx-gemma9-flores" \
+    --lsn_filename "map_t897_gemma9_flores.pt" \
+    --ld_filename "lang_dict" \
+    --model_name "google/gemma-2-9b-it" \
+    --dataset_name "Muennighoff/xwinograd" \
+    --split test \
+    --replace_method percent \
+    --operation_non_target ".1" \
+    --operation_target "=10" \
+    --metrics "acc" \
+    --kaggle_dataname_to_save "accxx-xwinograd-ap-d" \
+    --parent_dir_to_save "" \
+    --target_langs 0 7 5 8 9 6 \
+    --is_update \
+    > gemma_xwinogradxx.txt 2>&1

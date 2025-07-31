@@ -42,7 +42,6 @@ parser.add_argument("--batch_size", type=int, default=None, help="Batch size")
 args = parser.parse_args()
 # args, unknown = parser.parse_known_args()
 # args.model = "Qwen/Qwen2.5-0.5B-Instruct"
-# args.hf_logintoken = "***REMOVED***"
 # args.dataset_name = "Muennighoff/flores200"
 # args.split = "dev"
 # args.max_tokens_overzeros = 100000

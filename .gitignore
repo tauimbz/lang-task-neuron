@@ -2,3 +2,12 @@ __pycache__/
 res/
 data/
 venv/
+commands/
+result_mlama_dod/
+kaggle/*
+kaggle.json
+intervention_tasks_gemma.py
+intervention_tasks_qwensea.py
+intervention_tasks_notranslate.py
+intervention_tasks._gemma.py
+temp_non_batched_get_activations.py

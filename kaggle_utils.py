@@ -13,8 +13,8 @@ import requests
 
 
 kaggle_api_token = {
-    "username": "inayarahmanisa",
-    "key": "***REMOVED***"
+    "username": "", #  kaggle api
+    "key": ""
 }
 
 os.environ['KAGGLE_USERNAME'] = kaggle_api_token['username']
@@ -157,5 +157,3 @@ def save_to_kaggle(
 #     dataset_name= "testssssss",
 #     is_update=True
 # )
-
-# download_from_kaggle('inayarahmanisa/testssssss', 'test.pt')

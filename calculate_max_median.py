@@ -13,16 +13,6 @@ parser.add_argument("--parent_dir_to_save", type=str, default=None, help="Parent
 
 args = parser.parse_args()
 
-#MODIF
-
-# args, unknown = parser.parse_known_args()
-# args.in_kaggle = True
-# args.dataset_kaggle = "inayarahmanisa/activation-qwen05-flores"
-# args.filename = "act_flores200_997_False.pt"
-# args.kaggle_dataname_to_save = "activation-qwen05-flores"
-# args.is_update = True
-# args.n_layer = 24
-#END MODIF
 
 
 
