@@ -31,7 +31,7 @@ To intervene on tasks evaluation and language modeling performance, run `interve
 - Translation: [commands_example/int_flores/bleu/](commands_example/int_flores/bleu/) 
 - XWinograd: [commands_example/int_xwinograd/xx/lape/](commands_example/int_xwinograd/xx/lape/)
 - XCOPA: [commands_example/int_xcopa/xx/lape/](commands_example/int_xcopa/xx/lape/)
-- Include-lite: [](commands_example/int_include/xx/lape/)
+- Include-lite: [commands_example/int_include/xx/lape/](commands_example/int_include/xx/lape/)
 
 
 ## Citation
