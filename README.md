@@ -25,7 +25,7 @@ To get language-activated neurons, run `raw_act_neurons.py`. The example command
 ### 3. Compute LSS Score
 To compute LSS score using the reconstructed MLAMA dataset, refer to `intervention_dod.py`. The example commands are in [commands_example/intervention](commands_example/intervention). 
 
-### Task Evaluation Intervention
+### 4. Task Evaluation Intervention
 To intervene on tasks evaluation and language modeling performance, run `intervention_tasks.py`. Here are some example commands:
 - Perplexity: [commands_example/int_flores/ppl](commands_example/int_flores/ppl)
 - Translation: [commands_example/int_flores/bleu/](commands_example/int_flores/bleu/) 
