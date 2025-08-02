@@ -38,7 +38,7 @@ To intervene on tasks evaluation and language modeling performance, run `interve
 ```
 @misc{rahmanisa2025unveilinginfluenceamplifyinglanguagespecific,
       title={Unveiling the Influence of Amplifying Language-Specific Neurons}, 
-      author={Inaya Rahmanisa and Lyzander Marciano Andrylie and Krisna Mahardika Ihsani and Alfan Farizki Wicaksono and Haryo Akbarianto Wibowo and Alham Fikri Aji},
+      author={Inaya Rahmanisa and Lyzander Marciano Andrylie and Mahardika Krisna Ihsani and Alfan Farizki Wicaksono and Haryo Akbarianto Wibowo and Alham Fikri Aji},
       year={2025},
       eprint={2507.22581},
       archivePrefix={arXiv},
